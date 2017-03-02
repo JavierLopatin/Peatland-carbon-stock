@@ -308,6 +308,21 @@ cv_map <- cv_class(cv_maps)
 plot(cv_map)
 
 ### check were the uncertainties are higher
-polyClass <- rasterToPolygons( rclass2, dissolve = T, na.rm=T )
+library(doParallel)
+
+rclass3 <- resample(rclass2, NDVI, method="bilinear")
+rclass3 <- mask(rclass3, NDVI)
+plot(rclass3)
+
+# initialize parallel processing
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+
+polyClass <- rasterToPolygons( rclass3, dissolve = T )
 plot(polyClass)
-uncertainties <- extract(rclass2, polyClass, fun = "mean")
+uncertainties <- extract(cv_map, polyClass, fun = "mean")
+
+# stop parallel process
+stopCluster(cl) 
+
+save.image("peatland.RData")
