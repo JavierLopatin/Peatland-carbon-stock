@@ -131,8 +131,8 @@ innerplot(PLS2, arr.pos = 0.35) # inner model
 
 
 # rescaling scores. So the LV have the same scale than the manifest variables
-Scores1 = rescale(PLS)
-Scores2 = rescale(PLS2)
+Scores1 = plspm::rescale(PLS)
+Scores2 = plspm::rescale(PLS2)
 
 # Pairs plot
 panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
