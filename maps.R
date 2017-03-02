@@ -151,7 +151,6 @@ r_shrubs <- resample(r_shrubs, DCM, resample='bilinear')
 
 ### create NDVI mask
 NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
-#NDVI <- resample(NDVI, DCM, resample='bilinear')
 NDVI <- mask(NDVI, DCM) # exclude trees
 NDVI[NDVI<0.3] <- NA
 plot(NDVI)
@@ -220,7 +219,7 @@ predict_PLS_maps <- function(PLS){
   pred_Rich2 <- (inner_Rich2 * sd(Scores1$Rich)) + mean(Scores1$Rich)
   pred_BM2   <- (inner_BM2 * sd(Scores1$BM)) + mean(Scores1$BM)
   pred_C2    <- (inner_C2 * sd(Scores1$C)) + mean(Scores1$C)
-  pred_C2[pred_C2 < 0] <- NA
+  pred_C2[pred_C2 < 0] <- 0
   
   return(pred_C2)
   
@@ -240,7 +239,7 @@ save.image("peatland.RData")
 N = nrow(datapls2) # N° of observations
 B = 500             # N° of bootstrap iterations
 
-
+# run bootstrap
 for(i in 1:B){
   
   # create random numbers with replacement to select samples from each group
@@ -311,7 +310,7 @@ cv_class <- function(x){
 
 cv_map <- cv_class(cv_maps)
 
-plot(cv_map)
+plot(cv_map, zlim=c(0,60))
 
 ### check were the uncertainties are higher
 library(doParallel)
@@ -325,9 +324,19 @@ cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 
 polyClass <- rasterToPolygons( rclass3, dissolve = T )
-uncertainties <- extract(cv_map, polyClass, fun = median)
+writeOGR(polyClass, dsn=".", layer="polyClasses",driver="ESRI Shapefile")
 
 # stop parallel process
 stopCluster(cl) 
+
+### mean values of CV were extracted using the PFT classes of polyClass.shp using the 
+### python script "ExtractValues.py", located here: 
+### https://github.com/JavierLopatin/Python-Remote-Sensing-Scripts/blob/master/ExtractValues.py
+
+uncertainties <-  read.table("CV/classes_poly.csv", header=T, sep=",", dec=".")  
+
+bryophytes_error <- median( na.omit(uncertainties[uncertainties$DN=="1",])[,2] )
+herbaceous_error <- median( na.omit(uncertainties[uncertainties$DN=="2",])[,2] )
+shrubss_error    <- median( na.omit(uncertainties[uncertainties$DN=="3",])[,2] )
 
 save.image("peatland.RData")
