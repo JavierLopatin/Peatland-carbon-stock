@@ -136,17 +136,27 @@ save.image("peatland.RData")
 hyper <- stack("D:/out_P1/hyper_P1_2m.tif")
 names(hyper) <- paste0( rep("B", 41), seq(1,41,1) )
 
-DCM <- stack("D:/out_P1/treesvis/ndsm/ndsm_2m.tif")
+DCM <- stack("D:/out_P1/treesvis/ndsm/DCM_2m.tif")
 names(DCM) <- "H"
+DCM[DCM > 2.5] <- NA # exclude trees from the analysis
 plot(DCM)
 
+# match the images
+hyper <- resample(hyper, DCM, resample='bilinear')
+ordi_sp <- resample(ordi_sp, DCM, resample='bilinear')
+ordi_pft <- resample(ordi_sp, DCM, resample='bilinear')
+r_bryoph <- resample(r_bryoph, DCM, resample='bilinear')
+r_herbac <- resample(r_herbac, DCM, resample='bilinear')
+r_shrubs <- resample(r_shrubs, DCM, resample='bilinear')
+
 ### create NDVI mask
-NDVI <- ( hyper[[30]] - hyper[[20]] ) /  ( hyper[[30]] + hyper[[20]] )
+NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
+#NDVI <- resample(NDVI, DCM, resample='bilinear')
+NDVI <- mask(NDVI, DCM) # exclude trees
 NDVI[NDVI<0.3] <- NA
 plot(NDVI)
 
-### prepare images. Outer model
-
+### Predict C stock
 predict_PLS_maps <- function(PLS){ 
   
   #### outer model
@@ -166,8 +176,7 @@ predict_PLS_maps <- function(PLS){
   spectra_outer3 <- mask(spectra_outer3, NDVI) # Apply the mask
   
   # H
-  H_outer3 <- resample(DCM, NDVI, resample='bilinear')
-  H_outer3 <- spectra_outer3 <- mask(H_outer3, NDVI) # Apply the mask
+  H_outer3 <- mask(DCM, NDVI) # Apply the mask
   
   # FC
   FC_outer3 <- ((ordi_sp*FC_outer$weight[1])+(ordi_pft*FC_outer$weight[2]))
@@ -178,9 +187,6 @@ predict_PLS_maps <- function(PLS){
   Nr_herbac <- r_herbac * -1
   COV_outer3 <- ((Nr_bryoph*COV_outer$weight[1])+(Nr_herbac*COV_outer$weight[2])+
                  (r_shrubs*COV_outer$weight[3]))
-  
-  H_outer3   <- resample(H_outer3, spectra_outer3, resample='bilinear')
-  COV_outer3 <- resample(COV_outer3, spectra_outer3, resample='bilinear')
   COV_outer3 <- mask(COV_outer3, NDVI) # Apply the mask
   
   
@@ -222,7 +228,7 @@ predict_PLS_maps <- function(PLS){
 
 C_map <- predict_PLS_maps(PLS)
 
-plot(C_map, zlim=c(0,3.9))
+plot(C_map)
 
 save.image("peatland.RData")
 
@@ -319,8 +325,7 @@ cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 
 polyClass <- rasterToPolygons( rclass3, dissolve = T )
-plot(polyClass)
-uncertainties <- extract(cv_map, polyClass, fun = "mean")
+uncertainties <- extract(cv_map, polyClass, fun = median)
 
 # stop parallel process
 stopCluster(cl) 
