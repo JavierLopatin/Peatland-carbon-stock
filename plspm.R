@@ -13,89 +13,68 @@ setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 load("peatland.RData")
 
 ### Load data ####
-datapls <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
-names(datapls)
+data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
+names(data)
 
 # Floristic composition
 ordination <- read.table("data/ordination.csv", header=T, sep=",", dec=".") 
 PFT <- read.table("data/PFT.csv", header=T, sep=",", dec=".") 
 
-# hyperspectral data
-hyperData <- read.table("data/extract_mean.csv", header=T, sep=",", dec=".")   
-#wavelengths
-wl <- seq(475, 875, 10)
-#check spectra
-plot(wl, hyperData[10, 2:length(hyperData)], type = "l", xlab = "Wavelength", ylab = "Reflectance")
-
-# point cloud 
-pcloud <- read.table("data/PCloud_metrics.csv", header=T, sep=",", dec=".") 
-
-# new variables
-datapls$gramm_cover <- datapls$Reeds_cover + datapls$Ferns_cover + datapls$Grasses_cover
-datapls$gramm_richness <- datapls$Reeds_richness + datapls$Ferns_richness + datapls$Grass_richness
+### new variables
+data$gramm_cover <- data$Reeds_cover + data$Ferns_cover + data$Grasses_cover
+data$gramm_richness <- data$Reeds_richness + data$Ferns_richness + data$Grass_richness
 
 # add NMDS results to the data
-datapls$NMDS.sp1 = ordination$NMDS1
-datapls$NMDS.sp2 = ordination$NMDS2
-datapls$NMDS.sp3 = ordination$NMDS3
-datapls$NMDS.sp4 = ordination$NMDS4
+data$NMDS.sp1 = ordination$NMDS1
+data$NMDS.sp2 = ordination$NMDS2
+data$NMDS.sp3 = ordination$NMDS3
+data$NMDS.sp4 = ordination$NMDS4
 
-datapls$NMDS.PFT1 = PFT$PFT1
-datapls$NMDS.PFT2 = PFT$PFT2
-datapls$NMDS.PFT3 = PFT$PFT3
+data$NMDS.PFT1 = PFT$PFT1
+data$NMDS.PFT2 = PFT$PFT2
+data$NMDS.PFT3 = PFT$PFT3
 
 # Change
-datapls$NHerbs_cover = datapls$Herbs_cover * -1
-datapls$NShrub_richness = datapls$Shrub_richness * -1
-datapls$NBryo_cover = datapls$Bryo_cover * -1
-datapls$NMasa_musgo_kg_m2 = datapls$Masa_musgo_kg_m2 * -1
+data$NHerbs_cover = data$Herbs_cover * -1
+data$NShrub_richness = data$Shrub_richness * -1
+data$NBryo_cover = data$Bryo_cover * -1
+data$NMasa_musgo_kg_m2 = data$Masa_musgo_kg_m2 * -1
+data$NNMDS.sp1 <- data$NMDS.sp1 * -1
 
-names(datapls)
-
-##############################################
-
-datapls2 <- data.frame(datapls, hyperData[, 2:length(hyperData)])
-
-### Set the inner model
-# rows of the inner model matrix
-spectra = c(0, 0, 0, 0, 0, 0, 0)
-H       = c(0, 0, 0, 0, 0, 0, 0)
-FC      = c(1, 1, 0, 0, 0, 0, 0)
-Cov     = c(1, 1, 1, 0, 0, 0, 0)
-Rich    = c(1, 1, 1, 1, 0, 0, 0)
-BM      = c(1, 1, 1, 1, 1, 0, 0)
-C       = c(1, 1, 1, 1, 1, 1, 0)
-
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-Q_inner = rbind(spectra, H, FC,  Cov, Rich, BM, C) ; colnames(Q_inner) = rownames(Q_inner)
-# plot the inner matrix
-innerplot(Q_inner)
-
-### Set the outer model
-# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
-Q_modes = rep("A",7)
-
-## loading variables
-datapls2$NNMDS.sp1 <- datapls2$NMDS.sp1 * -1
+names(data)
 
 #####################
 ### Aboveground C ###
 #####################
 
+### Set the inner model
+# rows of the inner model matrix
+H       = c(0, 0, 0, 0, 0, 0)
+FC      = c(0, 0, 0, 0, 0, 0)
+Cov     = c(1, 1, 0, 0, 0, 0)
+Rich    = c(1, 1, 1, 0, 0, 0)
+BM      = c(1, 1, 1, 1, 0, 0)
+C       = c(1, 1, 1, 1, 1, 0)
+
+# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+Q_inner = rbind(H, FC,  Cov, Rich, BM, C) ; colnames(Q_inner) = rownames(Q_inner)
+# plot the inner matrix
+innerplot(Q_inner)
+
+### Set the outer model
+# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
+Q_modes = rep("A",6)
+
 # define list of indicators: what variables are associated with what latent variable: 
-Q_outer = list (c("B1","B2","B3","B4","B5","B6","B7","B8","B9","B10",
-                  "B11","B12","B13","B14","B15","B16","B17","B18","B19","B20",
-                  "B21","B22","B23","B24","B25","B26","B27","B28","B29","B30",
-                  "B31","B32","B33","B34","B35","B36","B37","B38","B39","B40", "B41"),
-                c("Altura_vegetacion_cm"),                                                   # heigts
-                c("NNMDS.sp1","NMDS.PFT1"),                                                   # FC
-                c("NBryo_cover","NHerbs_cover","shrubs_cover"),                # Cover
-                c("gramm_richness","Herb_richness","NShrub_richness"),                       # Richness
+Q_outer = list (c("Altura_vegetacion_cm"),                               # heigts
+                c("NNMDS.sp1","NMDS.PFT1"),                              # FC
+                c("NBryo_cover","NHerbs_cover","shrubs_cover"),          # Cover
+                c("gramm_richness","Herb_richness","NShrub_richness"),   # Richness
                 c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"), # Biomass
-                c("Carbono_Aereo_total_kg_m2"))                                              # Carbon
+                c("Carbono_Aereo_total_kg_m2"))                          # Carbon
 
 ### Run PLSPM for aboveground C stock
-PLS = plspm(datapls2, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS = plspm(data, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
 summary(PLS)
 
 # plot results
@@ -106,24 +85,45 @@ innerplot(PLS, arr.pos = 0.35) # inner model
 ### underground C ###
 #####################
 
-datapls2$Carbono_Subterraneo_kg_m2
-Q_outer2 = list (c("B1","B2","B3","B4","B5","B6","B7","B8","B9","B10",
-                  "B11","B12","B13","B14","B15","B16","B17","B18","B19","B20",
-                  "B21","B22","B23","B24","B25","B26","B27","B28","B29","B30",
-                  "B31","B32","B33","B34","B35","B36","B37","B38","B39","B40", "B41"),
-                c("Altura_vegetacion_cm"),                                                   # heigts
-                c("NNMDS.sp1","NMDS.PFT1"),                                                   # FC
-                c("NBryo_cover","NHerbs_cover","shrubs_cover"),                # Cover
-                c("gramm_richness","Herb_richness"),                       # Richness
-                c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"), # Biomass
-                c("Carbono_Subterraneo_kg_m2"))                                              # Carbon
+### Set the inner model
+# rows of the inner model matrix
+H2       = c(0, 0, 0, 0, 0, 0, 0)
+FC2      = c(0, 0, 0, 0, 0, 0, 0)
+Cov2     = c(1, 1, 0, 0, 0, 0, 0)
+Rich2    = c(1, 1, 1, 0, 0, 0, 0)
+BM2      = c(1, 1, 1, 1, 0, 0, 0)
+Depth2   = c(1, 1, 1, 1, 1, 0, 0)
+C2       = c(1, 1, 1, 1, 1, 1, 0)
+
+# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+Q_inner2 = rbind(H2, FC2,  Cov2, Rich2, BM2, Depth2, C2) ; colnames(Q_inner2) = rownames(Q_inner2)
+# plot the inner matrix
+innerplot(Q_inner2)
+
+### Set the outer model
+# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
+Q_modes2 = rep("A",7)
+
+# change direction of variables
+data$NCarbono_R3_kg_m2 = data$Carbono_R3_kg_m2 * -1
+
+Q_outer2 = list (c("Altura_vegetacion_cm"),      # heigts
+                c("NNMDS.sp1","NMDS.PFT1"),      # FC
+                c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
+                c("gramm_richness","Herb_richness"),                      # Richness
+                c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
+                c("depth"),
+                c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2", "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))                                              # Carbon
 
 ### Run PLSPM for aboveground C stock
-PLS2 = plspm(datapls2, Q_inner, Q_outer2, Q_modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS2 = plspm(data, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS2$inner_summary
 summary(PLS2)
 
 # plot results
 innerplot(PLS2, arr.pos = 0.35) # inner model
+
+save.image("peatland.RData")
 
 ##################################
 ### ------------------------- ###
@@ -152,23 +152,13 @@ pairs(Scores2, pch = 16, col = "blue", panel=panel.smooth, upper.panel=panel.cor
 ### predict LVs ###
 ###################
 
-predict_PLS_model <- function(PLS, data){ 
+predict_aerial_model <- function(PLS, data){ 
   
   #### outer model
-  spectra_outer <- data.frame(PLS$outer[1:41, ] )
-  FC_outer <- PLS$outer[43:44, ]
-  COV_outer <- PLS$outer[45:47, ]
-  Rich_outer <- PLS$outer[47:50, ]
-  BM_outer <- PLS$outer[51:52, ]
-  
-  PLS$path_coefs
-  # spectra
-  spectra_outer2 <- list()
-  for (i in 1:41){  
-    x = data[, 63:103][i] * spectra_outer[,3][i]
-    spectra_outer2[i] <- x
-  }
-  spectra_outer2 <- Reduce("+", spectra_outer2)
+  FC_outer <- PLS$outer[2:3, ]
+  COV_outer <- PLS$outer[4:6, ]
+  Rich_outer <- PLS$outer[7:9, ]
+  BM_outer <- PLS$outer[10:11, ]
   
   # FC 
   FC_outer2 <- ((data$NNMDS.sp1*FC_outer$weight[1])+(data$NMDS.PFT1*FC_outer$weight[2]))
@@ -182,7 +172,6 @@ predict_PLS_model <- function(PLS, data){
   BM_outer2 <- ((data$Biomasa_herbaceas_kg_m2*BM_outer$weight[1])+(data$Biomasa_arbustivas_kg_m2*BM_outer$weight[2]))
   
   # Normalize the data
-  norm.spectra <- (spectra_outer2 - mean(spectra_outer2))/sd(spectra_outer2)
   norm.H  <- (data$Altura_vegetacion_cm - mean(data$Altura_vegetacion_cm))/sd(data$Altura_vegetacion_cm)
   norm.FC <-   (FC_outer2 - mean(FC_outer2))/sd(FC_outer2)
   norm.COV <-  (COV_outer2 - mean(COV_outer2))/sd(COV_outer2)
@@ -192,20 +181,17 @@ predict_PLS_model <- function(PLS, data){
   #### inner model
   observed = data$Carbono_Aereo_total_kg_m2
   
-  inner_FC <- ( (norm.spectra*PLS$path_coefs[3])+(norm.H*PLS$path_coefs[10]) )
-  inner_COV <-( (norm.spectra*PLS$path_coefs[4])+(norm.H*PLS$path_coefs[11])+
-               (norm.FC*PLS$path_coefs[18]) )
+  inner_FC   <- (norm.H*PLS$path_coefs[2]) 
+  inner_COV  <-( (norm.H*PLS$path_coefs[3])+(norm.FC*PLS$path_coefs[9]) )
   
-  inner_Rich <- ( (norm.spectra*PLS$path_coefs[5])+(norm.H*PLS$path_coefs[12])+
-                 (norm.FC*PLS$path_coefs[19])+(norm.COV*PLS$path_coefs[26]) )
+  inner_Rich <- ( (norm.H*PLS$path_coefs[4])+(norm.FC*PLS$path_coefs[10])+
+                  (norm.COV*PLS$path_coefs[16]) )
+
+  inner_BM   <- ( (norm.H*PLS$path_coefs[5])+(norm.FC*PLS$path_coefs[11])+
+                  (norm.COV*PLS$path_coefs[17])+(norm.Rich*PLS$path_coefs[23]) )
   
-  inner_BM   <- ( (norm.spectra * PLS$path_coefs[6])+(norm.H * PLS$path_coefs[13])+
-                  (norm.FC * PLS$path_coefs[20])+(norm.COV * PLS$path_coefs[27])+
-                  (norm.Rich * PLS$path_coefs[34]))
-  
-  inner_C    <- ( (norm.spectra*PLS$path_coefs[7])+(norm.H*PLS$path_coefs[14])+
-                   (norm.FC*PLS$path_coefs[21])+(norm.COV*PLS$path_coefs[28])+
-                   (norm.Rich*PLS$path_coefs[35])+(norm.BM*PLS$path_coefs[42])) 
+  inner_C    <- ( (norm.H*PLS$path_coefs[6])+(norm.FC*PLS$path_coefs[12])+(norm.COV*PLS$path_coefs[18])+
+                  (norm.Rich*PLS$path_coefs[24])+(norm.BM*PLS$path_coefs[30]) ) 
   
   # predictions
   pred_FC   <- (inner_FC * sd(Scores1$FC)) + mean(Scores1$FC)
@@ -221,9 +207,80 @@ predict_PLS_model <- function(PLS, data){
   
 }
 
-pred_PLS <- predict_PLS_model(PLS, datapls2)
+pred_PLS <- predict_aerial_model(PLS, data)
 
 plot(Scores1$C, pred_PLS$C)
+
+### underground model
+predict_underground_model <- function(PLS, data){ 
+  
+  #### outer model
+  FC_outer <- PLS2$outer[2:3, ]
+  COV_outer <- PLS2$outer[4:6, ]
+  Rich_outer <- PLS2$outer[7:8, ]
+  BM_outer <- PLS2$outer[9:10, ]
+  depth_outer <- PLS2$outer[11, ]
+  C_outer <- PLS2$outer[12:15, ]
+  
+  # FC 
+  FC_outer2 <- ((data$NNMDS.sp1*FC_outer$weight[1])+(data$NMDS.PFT1*FC_outer$weight[2]))
+  # Cover 
+  COV_outer2 <- ((data$NBryo_cover*COV_outer$weight[1])+(data$NHerbs_cover*COV_outer$weight[2])+
+                   (data$shrubs_cover*COV_outer$weight[3]))
+  # Richness
+  Rich_outer2 <- ((data$gramm_richness*Rich_outer$weight[1])+(data$Herb_richness*Rich_outer$weight[2]))
+  # BM
+  BM_outer2 <- ((data$Biomasa_herbaceas_kg_m2*BM_outer$weight[1])+(data$Biomasa_arbustivas_kg_m2*BM_outer$weight[2]))
+  # depth
+  depth_outer2 <- data$depth
+  # C
+  C_outer2 <- ( (data$Carbono_musgo_kg_m2*C_outer$weight[1])+(data$Carbono_R1_kg_m2*C_outer$weight[2])+
+                (data$Carbono_R2_kg_m2*C_outer$weight[3])+(data$NCarbono_R3_kg_m2*C_outer$weight[4]) )
+  
+  # Normalize the data
+  norm.H  <- (data$Altura_vegetacion_cm - mean(data$Altura_vegetacion_cm))/sd(data$Altura_vegetacion_cm)
+  norm.FC <-   (FC_outer2 - mean(FC_outer2))/sd(FC_outer2)
+  norm.COV <-  (COV_outer2 - mean(COV_outer2))/sd(COV_outer2)
+  norm.Rich <- (Rich_outer2 - mean(Rich_outer2))/sd(Rich_outer2)
+  norm.BM <-   (BM_outer2 - mean(BM_outer2))/sd(BM_outer2)
+  norm.depth <-   (depth_outer2 - mean(depth_outer2))/sd(depth_outer2)
+  norm.C <-   (C_outer2 - mean(C_outer2))/sd(C_outer2)
+  
+  #### inner model
+  inner_COV  <- ( (norm.H*PLS2$path_coefs[3])+(norm.FC*PLS2$path_coefs[10]) )
+  
+  inner_Rich <- ( (norm.H*PLS2$path_coefs[4])+(norm.FC*PLS2$path_coefs[11])+
+                  (norm.COV*PLS2$path_coefs[18]) )
+  
+  inner_BM   <- ( (norm.H*PLS2$path_coefs[5])+(norm.FC*PLS2$path_coefs[12])+
+                  (norm.COV*PLS2$path_coefs[19])+(norm.Rich*PLS2$path_coefs[26]) )
+  
+  inner_depth  <- ( (norm.H*PLS2$path_coefs[6])+(norm.FC*PLS2$path_coefs[13])+
+                    (norm.COV*PLS2$path_coefs[20])+(norm.Rich*PLS2$path_coefs[27])+
+                    (norm.BM*PLS2$path_coefs[34]) ) 
+  
+  inner_C      <- ( (norm.H*PLS2$path_coefs[7])+(norm.FC*PLS2$path_coefs[14])+
+                    (norm.COV*PLS2$path_coefs[21])+(norm.Rich*PLS2$path_coefs[28])+
+                    (norm.BM*PLS2$path_coefs[35])+(norm.depth*PLS2$path_coefs[42]) )
+  
+  # predictions
+  pred_COV  <- (inner_COV * sd(Scores2$Cov2)) + mean(Scores2$Cov2)
+  pred_Rich <- (inner_Rich * sd(Scores2$Rich2)) + mean(Scores2$Rich2)
+  pred_BM   <- (inner_BM * sd(Scores2$BM2)) + mean(Scores2$BM2)
+  pred_depth<- (inner_depth * sd(Scores2$Depth2)) + mean(Scores2$Depth2)
+  pred_C    <- (inner_C * sd(Scores2$C2)) + mean(Scores2$C2)
+  
+  # prepare the output
+  out <- data.frame(pred_COV, pred_Rich, pred_BM, pred_depth, pred_C)
+  colnames(out) <- c("COV", "Rich", "BN", "Depth", "C")
+  out
+  
+}
+
+pred_PLS2 <- predict_underground_model(PLS, data)
+
+plot(Scores2$C2, pred_PLS2$C)
+
 
 save.image("peatland.RData")
 
@@ -231,10 +288,12 @@ save.image("peatland.RData")
 ### Independent bootstrap validation ###
 ########################################
 
+
+#### aerial Carbon
 set.seed(123)
 
 # set the bootstrap parameters
-N = nrow(datapls2) # N° of observations
+N = nrow(data) # N° of observations
 B = 500             # N° of bootstrap iterations
 
 # run bootstrapping
@@ -251,13 +310,13 @@ for(i in 1:B){
   idx = sample(1:N, N, replace=TRUE)
   
   # select subsets of the five groups based on the random numbers
-  train <- datapls2[idx,]
-  validation <- datapls2[-idx,]
+  train <- data[idx,]
+  validation <- data[-idx,]
   
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   
-  prediction <- predict_PLS_model(PLSrun, validation)
+  prediction <- predict_aerial_model(PLSrun, validation)
    
   # store the model accuracies
   OBS <- validation$Carbono_Aereo_total_kg_m2
@@ -276,6 +335,55 @@ for(i in 1:B){
 summary(unlist(r2))
 summary(unlist(Nrmse))
 summary(unlist(bias))
+
+#######################
+#### underground Carbon
+set.seed(123)
+
+# set the bootstrap parameters
+N = nrow(data) # N° of observations
+B = 500             # N° of bootstrap iterations
+
+# run bootstrapping
+obs2 <- list()
+pred2 <- list()
+r22 <- list()
+rmse2 <- list()
+Nrmse2 <- list()
+bias2 <- list()
+
+for(i in 1:B){
+  
+  # create random numbers with replacement to select samples from each group
+  idx = sample(1:N, N, replace=TRUE)
+  
+  # select subsets of the five groups based on the random numbers
+  train <- data[idx,]
+  validation <- data[-idx,]
+  
+  ### Run PLSPM for aboveground C stock
+  PLSrun = plspm(train, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+  
+  prediction <- predict_underground_model(PLSrun, validation)
+  
+  # store the model accuracies
+  OBS <- validation$Carbono_Aereo_total_kg_m2
+  PRED <- prediction$C
+  obs2[[i]] <- OBS
+  pred2[[i]] <- PRED
+  r22[[i]]<-(cor(PRED, OBS, method="pearson"))^2
+  s1<-sqrt(mean((OBS-PRED)^2))
+  rmse2[[i]]<-s1
+  Nrmse2[[i]]<-(s1/(max(OBS)-min(OBS)))*100
+  lm = lm(PRED ~ OBS-1)
+  bias2[[i]] <-1-coef(lm)
+  
+}
+
+summary(unlist(r22))
+summary(unlist(Nrmse2))
+summary(unlist(bias2))
+
 
 # plot
 pdf(file = "Figures/scatterPlot2.pdf", width=7, height=6)

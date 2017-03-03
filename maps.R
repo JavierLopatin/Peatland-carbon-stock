@@ -1,98 +1,5 @@
 
 
-###################################
-### Growth forms classification ###
-###################################
-
-## load required libraries
-library(caret)
-library(e1071)
-
-# set data
-classData <- read.table("data/classificationData.csv", header=T, sep=",", dec=".")   
-
-# Set the random number seed so we can reproduce the results
-set.seed(123)
-# Split data in training and test
-forTraining <- createDataPartition(classData$class, p = 0.6, list=F)
-train <- classData [ forTraining,]
-test <- classData [-forTraining,]
-train$class <- factor(train$class) 
-test$class <- factor(test$class) 
-
-# Each model used 5 repeated 10-fold cross-validation. Use AUC to pick the best model
-controlObject <- trainControl(method = "cv", number = 5, classProbs=TRUE, 
-                              allowParallel = TRUE, seeds = set.seed(123))
-
-
-svmClas <- train(x=train[, 2:length(train)], y=make.names( train$class ), method = "svmLinear2", 
-                 tuneLength=10, preProc = c("center", "scale"), trControl = controlObject)
-
-# predict
-svm.pred <- predict(svmClas, test[,2:length(train)])
-
-# confusion matix
-conf.svm <- confusionMatrix(svm.pred, test$class)
-
-# get accuracies
-PA.svm    <- conf.svm$byClass[,3] 
-UA.svm    <- conf.svm$byClass[,4]
-OA.svm    <- conf.svm$overall["Accuracy"]
-kappa.svm <- conf.svm$overall["Kappa"]
-
-### variable importance
-svr.alpha <- t(svmClas$finalModel$coefs) ## extract alpha vector
-svr.alpha <- colMeans(svr.alpha)
-svr.index <-  svmClas$finalModel$index ## extract alpha index
-## calculate pseudo-regression coefficients from the alpha vector
-svrcf <- numeric (ncol(classData[,2:43]))
-for(i in 1:ncol(classData[,2:43]))
-  svrcf[i] <- svr.alpha %*% classData[,2:43][svr.index, i]
-svrcf <- svrcf / sd (svrcf) ## scale pseudo-coefficients
-
-## plot
-plot(wl, svrcf[2:length(svrcf)], type="l" , ylim=c(-1,6))
-abline(h=0, lty=2)
-
-# extract the data from the classification Ensamble function
-bestCost  = svmClas$finalModel$cost
-bestGamma = svmClas$finalModel$gamma
-
-# model with all observations
-SVM  <- svm(class~., data=classData ,kernel = "linear",
-            gamma = bestGamma, cost = bestCost, probability = TRUE)
-
-# predict raster
-hyper <- stack("D:/out_P1/hyper_P1.tif")
-names(hyper) <- paste0( rep("B", 41), seq(1,41,1) )
-
-DCM <- stack("D:/out_P1/treesvis/ndsm/ndsm_corrected.tif")
-names(DCM) <- "H"
-
-# combine
-DCM2 <- resample(DCM, hyper,resample='bilinear')
-rClass <- stack(DCM2, hyper)
-
-# predict the classes
-rclass2 <- predict(rClass, SVM, type="class")
-
-plot(rclass2)
-
-# Export raster
-writeRaster(rclass2, filename="Classes.tif", format="GTiff", overwrite = T)
-
-### estimate covers in a 2 X 2 grid
-# count number of pixels of each class
-r_bryoph <- aggregate(rclass2, fact=20, fun= function(x, na.rm) length(which(x==1)), na.rm=T)
-r_herbac <- aggregate(rclass2, fact=20, fun= function(x, na.rm) length(which(x==2)), na.rm=T)
-r_shrubs <- aggregate(rclass2, fact=20, fun= function(x, na.rm) length(which(x==3)), na.rm=T)
-# get percentages
-r_bryoph <- (r_bryoph*100)/400
-r_herbac <- (r_herbac*100)/400
-r_shrubs <- (r_shruns*100)/400
-
-save.image("peatland.RData")
-
 #######################
 ### Ordination maps ###
 #######################
@@ -100,31 +7,36 @@ save.image("peatland.RData")
 library(autopls)
 
 # species ordination
-m1data <- data.frame(x = datapls2$NNMDS.sp1, H=datapls2$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
-m1 <- autopls(x ~., data=m1data)
-plot(m1)
+m1data <- data.frame(x = data$NNMDS.sp1, H=data$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
+m1 <- autopls(x ~., data=m1data, prep = "bn")
+pred_m1 <- predicted(m1)
+plot(m1data$x, pred_m1)
 
 # PFT ordination
-m2data <- data.frame(x = datapls2$NMDS.PFT1, H=datapls2$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
-m2 <- autopls(x ~., data=m2data)
-plot(m2)
+m2data <- data.frame(x = data$NMDS.PFT1, H=data$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
+m2 <- autopls(x ~., data=m2data, prep = "bn")
+pred_m2 <- predicted(m2)
+plot(m2data$x, pred_m2)
 
 # maps predictions
 hyper <- stack("D:/out_P1/hyper_P1_2m.tif")
 names(hyper) <- paste0( rep("B", 41), seq(1,41,1) )
 
-DCM <- stack("D:/out_P1/treesvis/ndsm/ndsm_2m.tif")
+DCM <- stack("D:/out_P1/treesvis/ndsm/DCM_2m.tif")
 names(DCM) <- "H"
 
 DCM2 <- resample(DCM, hyper,resample='bilinear')
 r <- stack(DCM2, hyper)
+r[r$H > 2] <- NA # height mask
+r[r$H < 0] <- NA
+plot(r[[2]])
 
 # spp
 ordi_sp = predict(m1, r, type="response")
-plot(ordi_sp)
+plot(ordi_sp, zlim=c(-2,1))
 # PFT
 ordi_pft = predict(m2, r, type="response")
-plot(ordi_pft)
+plot(ordi_pft, zlim=c(-2,1))
 
 save.image("peatland.RData")
 
@@ -132,22 +44,10 @@ save.image("peatland.RData")
 ### carbon maps ###
 ###################
 
-# load images
-hyper <- stack("D:/out_P1/hyper_P1_2m.tif")
-names(hyper) <- paste0( rep("B", 41), seq(1,41,1) )
-
-DCM <- stack("D:/out_P1/treesvis/ndsm/DCM_2m.tif")
-names(DCM) <- "H"
-DCM[DCM > 2.5] <- NA # exclude trees from the analysis
-plot(DCM)
-
 # match the images
-hyper <- resample(hyper, DCM, resample='bilinear')
+hyper <- resample(hyper, DCM, resample="bilinear")
 ordi_sp <- resample(ordi_sp, DCM, resample='bilinear')
 ordi_pft <- resample(ordi_sp, DCM, resample='bilinear')
-r_bryoph <- resample(r_bryoph, DCM, resample='bilinear')
-r_herbac <- resample(r_herbac, DCM, resample='bilinear')
-r_shrubs <- resample(r_shrubs, DCM, resample='bilinear')
 
 ### create NDVI mask
 NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
@@ -159,11 +59,10 @@ plot(NDVI)
 predict_PLS_maps <- function(PLS){ 
   
   #### outer model
-  spectra_outer <- PLS$outer[1:41, ]
-  FC_outer <- PLS$outer[43:44, ]
-  COV_outer <- PLS$outer[45:47, ]
-  Rich_outer <- PLS$outer[47:50, ]
-  BM_outer <- PLS$outer[51:52, ]
+  FC_outer <- PLS$outer[2:3, ]
+  COV_outer <- PLS$outer[4:6, ]
+  Rich_outer <- PLS$outer[7:9, ]
+  BM_outer <- PLS$outer[10:11, ]
   
   # spectra
   spectra_outer3 <- raster()
@@ -236,7 +135,7 @@ save.image("peatland.RData")
 ########################################
 
 # set the bootstrap parameters
-N = nrow(datapls2) # N° of observations
+N = nrow(data) # N° of observations
 B = 500             # N° of bootstrap iterations
 
 # run bootstrap
@@ -246,7 +145,7 @@ for(i in 1:B){
   idx = sample(1:N, N, replace=TRUE)
   
   # select subsets of the five groups based on the random numbers
-  train <- datapls2[idx,]
+  train <- data[idx,]
   
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
