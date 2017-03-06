@@ -75,6 +75,9 @@ Q_outer = list (c("Altura_vegetacion_cm"),                               # heigt
 
 ### Run PLSPM for aboveground C stock
 PLS = plspm(data, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS$outer
+PLS$inner_summary
+PLS$gof
 summary(PLS)
 
 # plot results
@@ -117,7 +120,9 @@ Q_outer2 = list (c("Altura_vegetacion_cm"),      # heigts
 
 ### Run PLSPM for aboveground C stock
 PLS2 = plspm(data, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS2$outer
 PLS2$inner_summary
+PLS2$gof
 summary(PLS2)
 
 # plot results
@@ -179,9 +184,6 @@ predict_aerial_model <- function(PLS, data){
   norm.BM <-   (BM_outer2 - mean(BM_outer2))/sd(BM_outer2)
   
   #### inner model
-  observed = data$Carbono_Aereo_total_kg_m2
-  
-  inner_FC   <- (norm.H*PLS$path_coefs[2]) 
   inner_COV  <-( (norm.H*PLS$path_coefs[3])+(norm.FC*PLS$path_coefs[9]) )
   
   inner_Rich <- ( (norm.H*PLS$path_coefs[4])+(norm.FC*PLS$path_coefs[10])+
@@ -194,15 +196,14 @@ predict_aerial_model <- function(PLS, data){
                   (norm.Rich*PLS$path_coefs[24])+(norm.BM*PLS$path_coefs[30]) ) 
   
   # predictions
-  pred_FC   <- (inner_FC * sd(Scores1$FC)) + mean(Scores1$FC)
   pred_COV  <- (inner_COV * sd(Scores1$Cov)) + mean(Scores1$Cov)
   pred_Rich <- (inner_Rich * sd(Scores1$Rich)) + mean(Scores1$Rich)
   pred_BM   <- (inner_BM * sd(Scores1$BM)) + mean(Scores1$BM)
   pred_C    <- (inner_C * sd(Scores1$C)) + mean(Scores1$C)
 
   # prepare the output
-  out <- data.frame(pred_FC, pred_COV, pred_Rich, pred_BM, pred_C)
-  colnames(out) <- c("FC", "COV", "Rich", "BN", "C")
+  out <- data.frame(pred_COV, pred_Rich, pred_BM, pred_C)
+  colnames(out) <- c("COV", "Rich", "BN", "C")
   out
   
 }
@@ -212,14 +213,13 @@ pred_PLS <- predict_aerial_model(PLS, data)
 plot(Scores1$C, pred_PLS$C)
 
 ### underground model
-predict_underground_model <- function(PLS, data){ 
+predict_underground_model <- function(PLS2, data){ 
   
   #### outer model
   FC_outer <- PLS2$outer[2:3, ]
   COV_outer <- PLS2$outer[4:6, ]
   Rich_outer <- PLS2$outer[7:8, ]
   BM_outer <- PLS2$outer[9:10, ]
-  depth_outer <- PLS2$outer[11, ]
   C_outer <- PLS2$outer[12:15, ]
   
   # FC 
@@ -243,7 +243,7 @@ predict_underground_model <- function(PLS, data){
   norm.COV <-  (COV_outer2 - mean(COV_outer2))/sd(COV_outer2)
   norm.Rich <- (Rich_outer2 - mean(Rich_outer2))/sd(Rich_outer2)
   norm.BM <-   (BM_outer2 - mean(BM_outer2))/sd(BM_outer2)
-  norm.depth <-   (depth_outer2 - mean(depth_outer2))/sd(depth_outer2)
+  norm.depth <- (depth_outer2 - mean(depth_outer2))/sd(depth_outer2)
   norm.C <-   (C_outer2 - mean(C_outer2))/sd(C_outer2)
   
   #### inner model
@@ -277,7 +277,7 @@ predict_underground_model <- function(PLS, data){
   
 }
 
-pred_PLS2 <- predict_underground_model(PLS, data)
+pred_PLS2 <- predict_underground_model(PLS2, data)
 
 plot(Scores2$C2, pred_PLS2$C)
 
@@ -363,11 +363,14 @@ for(i in 1:B){
   
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+  PLSval = plspm(validation, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   
   prediction <- predict_underground_model(PLSrun, validation)
   
+  scoresx <- scores(PLSval)
+  
   # store the model accuracies
-  OBS <- validation$Carbono_Aereo_total_kg_m2
+  OBS <- scoresx[,7]
   PRED <- prediction$C
   obs2[[i]] <- OBS
   pred2[[i]] <- PRED
@@ -383,37 +386,6 @@ for(i in 1:B){
 summary(unlist(r22))
 summary(unlist(Nrmse2))
 summary(unlist(bias2))
-
-
-# plot
-pdf(file = "Figures/scatterPlot2.pdf", width=7, height=6)
-par(mar=c(5, 5, 3, 3))
-Predicted = unlist(pred)
-Observed = unlist(obs)
-MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
-MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-plot(Observed,Predicted,xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue=255),
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=1.5, cex.lab=1.5, 
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=2)
-
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-
-lm1 = lm(Predicted ~ Observed-1)
-abline(lm1, lty=2, lwd=2)
-
-bias <-1-coef(lm1)
-
-txt1 = paste( "r2 =", round(R2,2))
-txt2 = paste("RMSE =",round(RMSE,2), "")
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt2, txt3, txt4, sep="\n") 
-pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-dev.off()
 
 save.image("peatland.RData")
 

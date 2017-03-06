@@ -1,5 +1,57 @@
 
 
+# Scatter-plots
+pdf(file = "Figures/scatterPlot.pdf", width=14, height=6)
+par(mfrow=c(1,2))
+## aerial C
+par(mar=c(5, 5, 3, 3))
+Predicted = unlist(pred)
+Observed = unlist(obs)
+MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
+MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
+plot(Observed,Predicted,xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue=255),
+     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=1.5, cex.lab=1.5, 
+     cex.axis=1.5, las= 1)
+abline(0, 1, lty=2)
+R2 <- (cor(Predicted, Observed, method="pearson"))^2
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
+lm1 = lm(Predicted ~ Observed-1)
+abline(lm1, lty=2, lwd=2)
+bias <-1-coef(lm1)
+txt1 = paste( "r2 =", round(R2,2))
+txt2 = paste("RMSE =",round(RMSE,2), "")
+txt3 = paste("%RMSE =",round(NRMSE,2), "")
+txt4 = paste("bias =",round(bias,2), "")
+txt = paste(txt1, txt2, txt3, txt4, sep="\n") 
+pusr = par()$usr
+text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
+mtext("(a)", side=3, line=0.5, adj=0, cex=1.5)
+
+## underground C
+par(mar=c(5, 5, 3, 3))
+Predicted = unlist(pred2)
+Observed = unlist(obs2)
+plot(Observed,Predicted, col=rgb(0,0,0,50,maxColorValue=255),
+     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=1.5, cex.lab=1.5, 
+     cex.axis=1.5, las= 1)
+abline(0, 1, lty=2)
+R2 <- (cor(Predicted, Observed, method="pearson"))^2
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
+lm1 = lm(Predicted ~ Observed-1)
+abline(lm1, lty=2, lwd=2)
+bias <- 1-coef(lm1)
+txt1 = paste( "r2 =", round(R2,2))
+txt2 = paste("RMSE =",round(RMSE,2), "")
+txt3 = paste("%RMSE =",round(NRMSE,2), "")
+txt4 = paste("bias =",round(bias,2), "")
+txt = paste(txt1, txt2, txt3, txt4, sep="\n") 
+pusr = par()$usr
+text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
+mtext("(b)", side=3, line=0.5, adj=0, cex=1.5)
+dev.off()
+
 #### plots
 
 ## Effects on aerial Carbon Stock
@@ -17,7 +69,7 @@ rownames(path_effs_C2) = c("H","FC","Cov","Rich","BM","Depth")
 
 # setting margin size
 # plot infuences 
-pdf(file = "Figures/efects.pdf", width=10, height=5)
+pdf(file = "Figures/effects.pdf", width=10, height=5)
 mat = layout(matrix(c(1,2), nrow = 1, ncol = 2, byrow = TRUE), widths=c(1,1.2))
 #layout.show(mat)
 # barplots of total effects (direct + indirect)
