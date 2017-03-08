@@ -210,7 +210,7 @@ par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
 plot(cv_map, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, zlim=c(0,60), legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="Coeff.Var (%)", side=4, line=2.3, cex=1), add=T)
+     legend.args=list(text="CoeffVar (%)", side=4, line=2.3, cex=1), add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
 mtext("(c)", side=3, line=0.5, adj=0, cex=1.5)
@@ -219,7 +219,7 @@ par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
 plot(cv_map2, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, zlim=c(0,60), legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="Coeff.Var (%)", side=4, line=2.3, cex=1), add=T)
+     legend.args=list(text="CoeffVar (%)", side=4, line=2.3, cex=1), add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
 mtext("(d)", side=3, line=0.5, adj=0, cex=1.5)
