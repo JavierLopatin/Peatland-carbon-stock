@@ -55,8 +55,9 @@ NDVI <- mask(NDVI, DCM) # exclude trees
 NDVI[NDVI<0.3] <- NA
 plot(NDVI)
 
-### Predict C stock
-predict_PLS_maps <- function(PLS){ 
+##########################
+### Predict aerial C stock
+predict_aerial_maps <- function(PLS){ 
   
   #### outer model
   FC_outer <- PLS$outer[2:3, ]
@@ -64,69 +65,94 @@ predict_PLS_maps <- function(PLS){
   Rich_outer <- PLS$outer[7:9, ]
   BM_outer <- PLS$outer[10:11, ]
   
-  # spectra
-  spectra_outer3 <- raster()
-  for (i in 1:41){  
-    x = hyper[[i]] * spectra_outer[,3][i]
-    spectra_outer3 <- addLayer(spectra_outer3, x)
-  }
-  spectra_outer3 <- sum(spectra_outer3) 
-  spectra_outer3 <- mask(spectra_outer3, NDVI) # Apply the mask
-  
   # H
-  H_outer3 <- mask(DCM, NDVI) # Apply the mask
+  H_outer <- DCM
   
   # FC
-  FC_outer3 <- ((ordi_sp*FC_outer$weight[1])+(ordi_pft*FC_outer$weight[2]))
-  FC_outer3 <- mask(FC_outer3, NDVI) # Apply the mask
-  
-  # Covers
-  Nr_bryoph <- r_bryoph * -1
-  Nr_herbac <- r_herbac * -1
-  COV_outer3 <- ((Nr_bryoph*COV_outer$weight[1])+(Nr_herbac*COV_outer$weight[2])+
-                 (r_shrubs*COV_outer$weight[3]))
-  COV_outer3 <- mask(COV_outer3, NDVI) # Apply the mask
-  
-  
+  FC_outer <- ((ordi_sp*FC_outer$weight[1])+(ordi_pft*FC_outer$weight[2]))
+
   # Normalize the data
-  norm.spectra2 <- (spectra_outer3 - cellStats(spectra_outer3, "mean"))/cellStats(spectra_outer3, "sd")
-  norm.H2  <-  (H_outer3 - cellStats(H_outer3, "mean"))/cellStats(H_outer3, "sd")
-  norm.FC2 <-  (FC_outer3 - cellStats(FC_outer3, "mean"))/cellStats(FC_outer3, "sd")
-  norm.COV2 <- (COV_outer3 - cellStats(COV_outer3, "mean"))/cellStats(COV_outer3, "sd")
-  
+  norm.H  <-  (H_outer3 - cellStats(H_outer3, "mean"))/cellStats(H_outer3, "sd")
+  norm.FC <-  (FC_outer3 - cellStats(FC_outer3, "mean"))/cellStats(FC_outer3, "sd")
+ 
   #### predict LVs
   #### inner model
-  inner_FC2 <- ( (norm.spectra2 * PLS$path_coefs[3])+(norm.H2  *PLS$path_coefs[10]) )
+  inner_COV  <-( (norm.H*PLS$path_coefs[3])+(norm.FC*PLS$path_coefs[9]) )
   
-  inner_COV2 <-( (norm.spectra2 * PLS$path_coefs[4])+(norm.H2 * PLS$path_coefs[11])+
-                  (norm.FC2 * PLS$path_coefs[18]) )
+  inner_Rich <- ( (norm.H*PLS$path_coefs[4])+(norm.FC*PLS$path_coefs[10])+
+                    (inner_COV*PLS$path_coefs[16]) )
   
-  inner_Rich2 <- ( (norm.spectra2 * PLS$path_coefs[5])+(norm.H2 *PLS$path_coefs[12]) +
-                  (norm.FC2 * PLS$path_coefs[19])+(norm.COV2 * PLS$path_coefs[26]) )
+  inner_BM   <- ( (norm.H*PLS$path_coefs[5])+(norm.FC*PLS$path_coefs[11])+
+                    (inner_COV*PLS$path_coefs[17])+(inner_Rich*PLS$path_coefs[23]) )
   
-  inner_BM2   <- ( (norm.spectra2 * PLS$path_coefs[6])+(norm.H2 * PLS$path_coefs[13])+
-                  (norm.FC2 * PLS$path_coefs[20])+(norm.COV2 * PLS$path_coefs[27])+
-                  (inner_Rich2 * PLS$path_coefs[34]))
-  
-  inner_C2    <- ( (norm.spectra2 * PLS$path_coefs[7])+(norm.H2 * PLS$path_coefs[14])+
-                  (norm.FC2 * PLS$path_coefs[21])+(norm.COV2 * PLS$path_coefs[28])+
-                  (inner_Rich2 * PLS$path_coefs[35])+(inner_BM2 * PLS$path_coefs[42])) 
+  inner_C    <- ( (norm.H*PLS$path_coefs[6])+(norm.FC*PLS$path_coefs[12])+(inner_COV*PLS$path_coefs[18])+
+                    (inner_Rich*PLS$path_coefs[24])+(inner_BM*PLS$path_coefs[30]) ) 
   
   # predictions
-  pred_FC2   <- (inner_FC2 * sd(Scores1$FC)) + mean(Scores1$FC)
-  pred_COV2  <- (inner_COV2 * sd(Scores1$Cov)) + mean(Scores1$Cov)
-  pred_Rich2 <- (inner_Rich2 * sd(Scores1$Rich)) + mean(Scores1$Rich)
-  pred_BM2   <- (inner_BM2 * sd(Scores1$BM)) + mean(Scores1$BM)
-  pred_C2    <- (inner_C2 * sd(Scores1$C)) + mean(Scores1$C)
-  pred_C2[pred_C2 < 0] <- 0
-  
-  return(pred_C2)
+  pred_COV  <- (inner_COV * sd(Scores1$Cov)) + mean(Scores1$Cov)
+  pred_Rich <- (inner_Rich * sd(Scores1$Rich)) + mean(Scores1$Rich)
+  pred_BM   <- (inner_BM * sd(Scores1$BM)) + mean(Scores1$BM)
+  pred_C    <- (inner_C * sd(Scores1$C)) + mean(Scores1$C)
+  pred_C
   
  }
 
-C_map <- predict_PLS_maps(PLS)
+C_map <- predict_aerial_maps(PLS)
 
 plot(C_map)
+
+##########################
+### Predict underground C stock
+predict_underground_maps <- function(PLS2){ 
+  
+  #### outer model
+  FC_outer <- PLS2$outer[2:3, ]
+  COV_outer <- PLS2$outer[4:6, ]
+  Rich_outer <- PLS2$outer[7:8, ]
+  BM_outer <- PLS2$outer[9:10, ]
+  depth_outer <- PLS2$outer[11, ]
+  C_outer <- PLS2$outer[12:15, ]
+  
+  # outer model
+  # FC 
+  H_outer2 <- DCM
+  # FC
+  FC_outer2 <- ((ordi_sp*FC_outer$weight[1])+(ordi_pft*FC_outer$weight[2]))
+
+  # Normalize the data
+  norm.H  <- (H_outer2 - cellStats(H_outer2, "mean"))/cellStats(H_outer2, "sd")
+  norm.FC <-   (FC_outer2 - cellStats(FC_outer2, "mean"))/cellStats(FC_outer2, "sd")
+  
+  #### predict LVs
+  #### inner model
+  inner_COV  <- ( (norm.H*PLS2$path_coefs[3])+(norm.FC*PLS2$path_coefs[10]) )
+  
+  inner_Rich <- ( (norm.H*PLS2$path_coefs[4])+(norm.FC*PLS2$path_coefs[11])+
+                    (inner_COV*PLS2$path_coefs[18]) )
+  
+  inner_BM   <- ( (norm.H*PLS2$path_coefs[5])+(norm.FC*PLS2$path_coefs[12])+
+                    (inner_COV*PLS2$path_coefs[19])+(inner_Rich*PLS2$path_coefs[26]) )
+  
+  inner_depth  <- ( (norm.H*PLS2$path_coefs[6])+(norm.FC*PLS2$path_coefs[13])+
+                      (inner_BM*PLS2$path_coefs[20])+(inner_Rich*PLS2$path_coefs[27])+
+                      (inner_BM*PLS2$path_coefs[34]) ) 
+  
+  inner_C      <- ( (norm.H*PLS2$path_coefs[7])+(norm.FC*PLS2$path_coefs[14])+
+                      (inner_COV*PLS2$path_coefs[21])+(inner_Rich*PLS2$path_coefs[28])+
+                      (inner_BM*PLS2$path_coefs[35])+(inner_depth*PLS2$path_coefs[42]) )
+  
+  # predictions
+  pred_COV2  <- (inner_COV * sd(Scores2$Cov2)) + mean(Scores2$Cov2)
+  pred_Rich2 <- (inner_Rich * sd(Scores2$Rich2)) + mean(Scores2$Rich2)
+  pred_BM2   <- (inner_BM * sd(Scores2$BM2)) + mean(Scores2$BM2)
+  #pred_C2    <- (inner_C * sd(Scores2$C2)) + mean(Scores2$C2)
+  #pred_C2
+  inner_C
+}
+
+C_map2 <- predict_underground_maps(PLS2)
+
+plot(C_map2)
 
 save.image("peatland.RData")
 
@@ -137,6 +163,9 @@ save.image("peatland.RData")
 # set the bootstrap parameters
 N = nrow(data) # N° of observations
 B = 500             # N° of bootstrap iterations
+
+###############
+### Aerial C
 
 # run bootstrap
 for(i in 1:B){
@@ -150,7 +179,7 @@ for(i in 1:B){
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   
-  prediction <- predict_PLS_maps(PLSrun)
+  prediction <- predict_aerial_maps(PLSrun)
   
   # Export raster
   out = paste0("pred_maps/carbon_", i,".tif")
@@ -158,9 +187,35 @@ for(i in 1:B){
   
 }
 
+##################
+### Underground C
+
+# run bootstrap
+for(i in 1:B){
+  
+  # create random numbers with replacement to select samples from each group
+  idx = sample(1:N, N, replace=TRUE)
+  
+  # select subsets of the five groups based on the random numbers
+  train <- data[idx,]
+  
+  ### Run PLSPM for aboveground C stock
+  PLSrun = plspm(train, Q_inner2, Q_outer2, Q_modes2, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+  
+  prediction <- predict_underground_maps(PLSrun)
+
+  # Export raster
+  out = paste0("pred_maps2/carbon_", i,".tif")
+  writeRaster(prediction, filename=out, format="GTiff", overwrite = T)
+  
+}
+
 ########################################
 ### estimation of coef. of variation ###
 ########################################
+
+##################
+### aerial C
 
 ## List and load the rasters contained in a folder 
 rasterList <- function(fileExtantion, folder, dir=NULL, select=NULL){
@@ -193,49 +248,38 @@ rasterList <- function(fileExtantion, folder, dir=NULL, select=NULL){
   return(rasterlist)
 }
 
-cv_maps <- rasterList(fileExtantion = ".tif", folder = "pred_maps", dir="C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
+cv_maps <- rasterList(fileExtantion = ".tif", folder = "pred_maps", 
+                      dir="C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 
 # calculate cv
 # create output folder
 dir.create("CV", showWarnings = FALSE)
 
 # cv function
-cv_class <- function(x){
+cv_class <- function(x, y){
   r <- stack( unlist(x) )
   CV <- cv(r)
-  out = "CV/CV_maps.tif"
+  out = paste0("CV/", y, ".tif")
   writeRaster(CV, filename = out, format = "GTiff", overwrite = T)
 }
 
-cv_map <- cv_class(cv_maps)
-
+cv_map <- cv_class(cv_maps, "cv_map")
+# cv_map <- stack("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try/CV/cv_maps.tif")
 plot(cv_map, zlim=c(0,60))
 
-### check were the uncertainties are higher
-library(doParallel)
+save.image("peatland.RData")
 
-rclass3 <- resample(rclass2, NDVI, method="bilinear")
-rclass3 <- mask(rclass3, NDVI)
-plot(rclass3)
+##################
+### underground C
 
-# initialize parallel processing
-cl <- makeCluster(detectCores())
-registerDoParallel(cl)
+## List and load the rasters contained in a folder 
+cv_maps <- rasterList(fileExtantion = ".tif", folder = "pred_maps2", 
+                      dir="C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 
-polyClass <- rasterToPolygons( rclass3, dissolve = T )
-writeOGR(polyClass, dsn=".", layer="polyClasses",driver="ESRI Shapefile")
-
-# stop parallel process
-stopCluster(cl) 
-
-### mean values of CV were extracted using the PFT classes of polyClass.shp using the 
-### python script "ExtractValues.py", located here: 
-### https://github.com/JavierLopatin/Python-Remote-Sensing-Scripts/blob/master/ExtractValues.py
-
-uncertainties <-  read.table("CV/classes_poly.csv", header=T, sep=",", dec=".")  
-
-bryophytes_error <- median( na.omit(uncertainties[uncertainties$DN=="1",])[,2] )
-herbaceous_error <- median( na.omit(uncertainties[uncertainties$DN=="2",])[,2] )
-shrubss_error    <- median( na.omit(uncertainties[uncertainties$DN=="3",])[,2] )
+# calculate cv
+cv_map2 <- cv_class(cv_maps, "cv_map2")
+# cv_map2 <- stack("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try/CV/cv_map2.tif")
+plot(cv_map2)
 
 save.image("peatland.RData")
+
