@@ -3,13 +3,16 @@
 ### Floristic composition ###
 # ##########################
 
+library (vegan)
+library (MASS)
+
 ## fit environmental vectors
 xdat <- data.frame(H=data$Altura_vegetacion_cm, C=data$Carbono_total, Rich=data$Riqueza_Total, 
                    BM=data$Biomasa_total,  Cov=data$Cobertura_total, Depth=data$depth)
 fit1 <- envfit(nmds1, xdat)
-fit2 <- envfit(nmds2, Scores2)
+fit2 <- envfit(nmds2, xdat)
 
-pdf(file = "Figures/FC.pdf", width=10, height=5)
+pdf(file = "Figures/FC2.pdf", width=10, height=10)
 par(mfrow=c(2,2))
 # plot species ordination
 #par(mai=c(1,0.5,1,0.5))
@@ -19,7 +22,7 @@ axis(side=1, las=1, cex.axis = 1.5, at=seq(-2.5,2,0.5), pos=-2)
 axis(side = 2, las=1, cex.axis = 1.5, pos=-2.5)
 mtext("Axis 1", side=1, cex=1.5, line=0.8)
 mtext("Axis 2", side=2, cex=1.5, line=2.3)
-points(fig, "sites", pch=16, cex=data$Carbono_total*0.18 , col=rgb(0,0,0,60,maxColorValue=255))
+points(fig, "sites", pch=16, cex=data$Carbono_total*0.18, col=rgb(0,0,0,60,maxColorValue=255))
 plot(fit1, col="red", lty=2, cex=1.5)
 mtext("(a)", side=3, line=0.5, adj=0, cex=2)
 # plot PFTs ordination

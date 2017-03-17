@@ -21,7 +21,6 @@ summary(pft2)
 ### Ordination procidure ###
 ############################
 
-
 ##### Apply MDS  #####
 
 # To spp level
@@ -29,7 +28,7 @@ summary(pft2)
 nmds.stress <- sapply(1:6, function(x) metaMDS(sp[, 2:(length(sp)-2)], k=x)$stress)
 plot(1:6, nmds.stress)
 # Selecting a number of dimensions: compromise between as few dimensions and low stress value
-nmds1 <- metaMDS(sp[, 2:(length(sp)-2)], k=4, trymax=100)
+nmds1 <- metaMDS(sp[, 2:(length(sp)-2)], k=4, trymax=1000)
 nmds1$stress
 ## plot
 ordiplot(nmds1, choices=c(1,2))
@@ -46,7 +45,7 @@ NMDS.sp3  <- scor[, 3]
 NMDS.sp4  <- scor[, 4]
 
 ordination <- data.frame(sp$Plot, NMDS.sp1, NMDS.sp2, NMDS.sp3, NMDS.sp4)
-write.table(ordination, file = "data/ordination.csv", sep = ",", col.names = T, row.names = F)
+#write.table(ordination, file = "data/ordination.csv", sep = ",", col.names = T, row.names = F)
 
 # To PFT level
 # Selecting the number of k (stress value)
@@ -66,6 +65,6 @@ NMDS.PFT2 <- scor[, 2]
 NMDS.PFT3  <- scor[, 3]
 
 PFT <- data.frame(N=pft$Plot, PFT1=NMDS.PFT1, PFT2=NMDS.PFT2, PFT3=NMDS.PFT3)
-write.table(PFT, file = "data/PFT.csv", sep = ",", col.names = T, row.names = F)
+#write.table(PFT, file = "data/PFT.csv", sep = ",", col.names = T, row.names = F)
 
 save.image("ordination.RData")

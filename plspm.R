@@ -24,6 +24,10 @@ PFT <- read.table("data/PFT.csv", header=T, sep=",", dec=".")
 data$gramm_cover <- data$Reeds_cover + data$Ferns_cover + data$Grasses_cover
 data$gramm_richness <- data$Reeds_richness + data$Ferns_richness + data$Grass_richness
 
+### diversity
+data$shannon <- shannon
+data$simpson <- simpson
+
 # add NMDS results to the data
 data$NMDS.sp1 = ordination$NMDS1
 data$NMDS.sp2 = ordination$NMDS2
@@ -52,12 +56,12 @@ names(data)
 H       = c(0, 0, 0, 0, 0, 0)
 FC      = c(0, 0, 0, 0, 0, 0)
 Cov     = c(1, 1, 0, 0, 0, 0)
-Rich    = c(1, 1, 1, 0, 0, 0)
-BM      = c(1, 1, 1, 1, 0, 0)
+BM      = c(1, 1, 1, 0, 0, 0)
+Rich    = c(1, 1, 1, 1, 0, 0)
 C       = c(1, 1, 1, 1, 1, 0)
 
 # matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-Q_inner = rbind(H, FC,  Cov, Rich, BM, C) ; colnames(Q_inner) = rownames(Q_inner)
+Q_inner = rbind(H, FC,  Cov, BM, Rich,  C) ; colnames(Q_inner) = rownames(Q_inner)
 # plot the inner matrix
 innerplot(Q_inner)
 
@@ -69,8 +73,8 @@ Q_modes = rep("A",6)
 Q_outer = list (c("Altura_vegetacion_cm"),                               # heigts
                 c("NNMDS.sp1","NMDS.PFT1"),                              # FC
                 c("NBryo_cover","NHerbs_cover","shrubs_cover"),          # Cover
-                c("gramm_richness","Herb_richness","NShrub_richness"),   # Richness
                 c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"), # Biomass
+                c("gramm_richness","Herb_richness","NShrub_richness"),   # Richness
                 c("Carbono_Aereo_total_kg_m2"))                          # Carbon
 
 ### Run PLSPM for aboveground C stock
@@ -78,7 +82,8 @@ PLS = plspm(data, Q_inner, Q_outer, Q_modes, maxiter= 1000, boot.val = T, br = 1
 PLS$outer
 PLS$inner_summary
 PLS$gof
-summary(PLS)
+PLS$path_coefs
+PLS$boot
 
 # plot results
 innerplot(PLS, arr.pos = 0.35) # inner model
@@ -93,13 +98,13 @@ innerplot(PLS, arr.pos = 0.35) # inner model
 H2       = c(0, 0, 0, 0, 0, 0, 0)
 FC2      = c(0, 0, 0, 0, 0, 0, 0)
 Cov2     = c(1, 1, 0, 0, 0, 0, 0)
-Rich2    = c(1, 1, 1, 0, 0, 0, 0)
-BM2      = c(1, 1, 1, 1, 0, 0, 0)
+BM2      = c(1, 1, 1, 0, 0, 0, 0)
+Rich2    = c(1, 1, 1, 1, 0, 0, 0)
 Depth2   = c(1, 1, 1, 1, 1, 0, 0)
 C2       = c(1, 1, 1, 1, 1, 1, 0)
 
 # matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-Q_inner2 = rbind(H2, FC2,  Cov2, Rich2, BM2, Depth2, C2) ; colnames(Q_inner2) = rownames(Q_inner2)
+Q_inner2 = rbind(H2, FC2,  Cov2, BM2, Rich2, Depth2, C2) ; colnames(Q_inner2) = rownames(Q_inner2)
 # plot the inner matrix
 innerplot(Q_inner2)
 
@@ -113,9 +118,9 @@ data$NCarbono_R3_kg_m2 = data$Carbono_R3_kg_m2 * -1
 Q_outer2 = list (c("Altura_vegetacion_cm"),      # heigts
                 c("NNMDS.sp1","NMDS.PFT1"),      # FC
                 c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
-                c("gramm_richness","Herb_richness"),                      # Richness
                 c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
-                c("depth"),
+                c("gramm_richness","Herb_richness"),                      # Richness
+                c("depth"),                                               # soil depth
                 c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2", "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))                                              # Carbon
 
 ### Run PLSPM for aboveground C stock

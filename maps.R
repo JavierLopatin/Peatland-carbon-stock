@@ -6,6 +6,22 @@
 
 library(autopls)
 
+#####FIXT the BN
+prepro_img <- function (X)
+{
+  
+  method <- match.arg (method, c('bn', 'msc'), several.ok = TRUE) # more2come ..
+  
+  if ('bn' %in% method)
+  {
+    if (is.vector (X)) X <- X / sqrt (sum (X ^ 2))
+    if (is.matrix (X)) X <- X / sqrt (rowSums (X ^ 2))         
+    if (class (X) == 'RasterBrick' || class (X) == 'RasterStack')
+      X <- X / sqrt (raster::stackApply (X ^ 2, rep (1, raster::nlayers (X)), sum))
+  }
+  invisible (X)
+}
+
 # species ordination
 m1data <- data.frame(x = data$NNMDS.sp1, H=data$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
 m1 <- autopls(x ~., data=m1data, prep = "bn")
@@ -30,6 +46,9 @@ r <- stack(DCM2, hyper)
 r[r$H > 2] <- NA # height mask
 r[r$H < 0] <- NA
 plot(r[[2]])
+
+r2 <- autopls::prepro(r, method = "bn")
+names(r2) <- names(r)
 
 # spp
 ordi_sp = predict(m1, r, type="response")
