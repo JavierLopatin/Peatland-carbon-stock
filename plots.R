@@ -102,7 +102,7 @@ plot(Observed,Predicted,xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue
      cex.axis=1.5, las= 1)
 axis(side=1, las=1, cex.axis = 1.5, pos=0)
 axis(side = 2, las=1, cex.axis = 1.5, pos=0)
-abline(0, 1, lty=2)
+abline(0, 1, lty=3, lwd=2)
 R2 <- (cor(Predicted, Observed, method="pearson"))^2
 RMSE <- sqrt(mean((Observed-Predicted)^2))
 NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
@@ -115,6 +115,7 @@ txt4 = paste("bias =",round(bias,2), "")
 txt = paste(txt1, txt3, txt4, sep="\n") 
 pusr = par()$usr
 text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
+legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(3,2), cex=1.5, bty = "n")
 mtext("(a)", side=3, line=0.5, adj=0, cex=2)
 ## underground C
 par(mar=c(5, 5, 3, 3))
@@ -125,7 +126,7 @@ plot(Observed,Predicted, col=rgb(0,0,0,50,maxColorValue=255), axes=F, xaxs="i", 
      cex.axis=1.5, las= 1)
 axis(side=1, las=1, cex.axis = 1.5, pos=0, at=seq(0,25,5))
 axis(side = 2, las=1, cex.axis = 1.5, pos=0, at=seq(0,25,5))
-abline(0, 1, lty=2)
+abline(0, 1, lty=3, lwd=2)
 R2 <- (cor(Predicted, Observed, method="pearson"))^2
 RMSE <- sqrt(mean((Observed-Predicted)^2))
 NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
@@ -141,6 +142,78 @@ text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, ad
 mtext("(b)", side=3, line=0.5, adj=0, cex=2)
 dev.off()
 
+### results using PLSR ###
+pdf(file = "Figures/scatterPLSR.pdf", width=13, height=6)
+par(mfrow=c(1,2))
+## aerial C
+par(mar=c(5, 5, 3, 3))
+Predicted = unlist(xpred1)
+Observed = unlist(xobs1)
+MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
+MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
+plot(Observed,Predicted,xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue=255),axes=F,
+     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xaxs="i", yaxs="i",
+     cex.axis=1.5, las= 1)
+axis(side=1, las=1, cex.axis = 1.5, pos=0)
+axis(side = 2, las=1, cex.axis = 1.5, pos=0)
+abline(0, 1, lty=3, lwd=2)
+R2 <- (cor(Predicted, Observed, method="pearson"))^2
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
+lm1 = lm(Predicted ~ Observed-1)
+abline(lm1, lty=2, lwd=2)
+bias <-1-coef(lm1)
+txt1 = paste( "r2 =", round(R2,2))
+txt3 = paste("%RMSE =",round(NRMSE,2), "")
+txt4 = paste("bias =",round(bias,2), "")
+txt = paste(txt1, txt3, txt4, sep="\n") 
+pusr = par()$usr
+text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
+legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(3,2), cex=1.5, bty = "n")
+mtext("(a)", side=3, line=0.5, adj=0, cex=2)
+## underground C
+par(mar=c(5, 5, 3, 3))
+Predicted = unlist(xpred2)
+Observed = unlist(xobs2)
+plot(Observed,Predicted, col=rgb(0,0,0,50,maxColorValue=255), axes=F, xaxs="i", yaxs="i",
+     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xlim=c(0,25),ylim=c(0,25),
+     cex.axis=1.5, las= 1)
+axis(side=1, las=1, cex.axis = 1.5, pos=0, at=seq(0,25,5))
+axis(side = 2, las=1, cex.axis = 1.5, pos=0, at=seq(0,25,5))
+abline(0, 1, lty=3, lwd=2)
+R2 <- (cor(Predicted, Observed, method="pearson"))^2
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
+lm1 = lm(Predicted ~ Observed-1)
+abline(lm1, lty=2, lwd=2)
+bias <- 1-coef(lm1)
+txt1 = paste( "r2 =", round(R2,2))
+txt3 = paste("%RMSE =",round(NRMSE,2), "")
+txt4 = paste("bias =",round(bias,2), "")
+txt = paste(txt1, txt3, txt4, sep="\n") 
+pusr = par()$usr
+text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
+mtext("(b)", side=3, line=0.5, adj=0, cex=2)
+dev.off()
+
+
+### coefficients
+pdf(file = "Figures/PLSRCoeff.pdf", width=12, height=5)
+par(mfrow=c(1,2))
+par(mar=c(5, 5, 3, 3))
+plot( c(wl,920), coeff1, ylim=c(min(coeff1), max(coeff1)), type="h", xlab=expression(lambda(nm)), 
+      ylab="Coefficient", las=1, axes=F, cex=2, cex.lab=1.5 )
+abline(0,0, lty=2)
+axis(side=1, las=1, at=wl, cex.axis = 1.5)
+axis(side = 2, las=1, cex.axis = 1.5)
+#
+par(mar=c(5, 5, 3, 3))
+plot( c(wl,920), coeff2, ylim=c(min(coeff2), max(coeff2)), type="h", xlab=expression(lambda(nm)), 
+      ylab="Coefficient", las=1, axes=F,cex=2, cex.lab=1.5 )
+abline(0,0, lty=2)
+axis(side=1, las=1, at=wl, cex.axis = 1.5)
+axis(side = 2, las=1,cex.axis = 1.5)
+dev.off()
 
 #############################
 ### path analysis effects ###
@@ -227,3 +300,4 @@ north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
 mtext("(d)", side=3, line=0.5, adj=0, cex=1.5)
 dev.off()
+
