@@ -181,7 +181,7 @@ save.image("peatland.RData")
 
 # set the bootstrap parameters
 N = nrow(data) # N° of observations
-B = 500             # N° of bootstrap iterations
+B = 500        # N° of bootstrap iterations
 
 ###############
 ### Aerial C

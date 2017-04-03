@@ -95,16 +95,16 @@ innerplot(PLS, arr.pos = 0.35) # inner model
 
 ### Set the inner model
 # rows of the inner model matrix
-H2       = c(0, 0, 0, 0, 0, 0, 0)
-FC2      = c(0, 0, 0, 0, 0, 0, 0)
-Cov2     = c(1, 1, 0, 0, 0, 0, 0)
-BM2      = c(1, 1, 1, 0, 0, 0, 0)
-Rich2    = c(1, 1, 1, 1, 0, 0, 0)
-Depth2   = c(1, 1, 1, 1, 1, 0, 0)
-C2       = c(1, 1, 1, 1, 1, 1, 0)
+H       = c(0, 0, 0, 0, 0, 0, 0)
+FC      = c(0, 0, 0, 0, 0, 0, 0)
+Cov     = c(1, 1, 0, 0, 0, 0, 0)
+BM      = c(1, 1, 1, 0, 0, 0, 0)
+Rich    = c(1, 1, 1, 1, 0, 0, 0)
+Depth   = c(1, 1, 1, 1, 1, 0, 0)
+C       = c(1, 1, 1, 1, 1, 1, 0)
 
 # matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-Q_inner2 = rbind(H2, FC2,  Cov2, BM2, Rich2, Depth2, C2) ; colnames(Q_inner2) = rownames(Q_inner2)
+Q_inner2 = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(Q_inner2) = rownames(Q_inner2)
 # plot the inner matrix
 innerplot(Q_inner2)
 
@@ -394,3 +394,82 @@ summary(unlist(bias2))
 
 save.image("peatland.RData")
 
+###################################################
+### Fits PLSR directly using the RS information ###
+###################################################
+
+library(autopls)
+
+prepro <- function (X) # brightness normalization
+{
+ X <- X / sqrt (rowSums (X ^ 2))         
+ X
+}
+
+data2 <- data.frame( C=data$Carbono_Aereo_total_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
+data3 <- data.frame( C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
+
+## bootstrap
+
+# set the bootstrap parameters
+N = nrow(data) # N° of observations
+B = 100        # N° of bootstrap iterations
+
+xobs1 <- list()
+xobs2 <- list()
+xpred1 <- list()
+xpred2 <- list()
+xcoef1 <- list()
+xcoef2 <- list()
+xr21 <- list()
+xr22 <- list()
+xNrmse1 <- list()
+xNrmse2 <- list()
+xbias1 <- list()
+xbias2 <- list()
+
+for (i in 1:B) { 
+  
+  # create random numbers with replacement to select samples from each group
+  idx = sample(1:N, N, replace=TRUE)
+  
+  # select subsets of the five groups based on the random numbers
+  train1 <- data2[idx,]
+  train2 <- data3[idx,]
+  
+  # observed 
+  obs_1 <- train1$C
+  obs_2 <- train2$C
+  
+  # aboveground C stock
+  fit1 <- autopls(C~., data=train1)
+  pred_1 <- predicted(fit1)  
+  
+  # underground C stock
+  fit2 <- autopls(C~., data=train2)
+  pred_2 <- predicted(fit2) 
+
+  # store values
+  xobs1[[i]] <- obs_1
+  xobs2[[i]] <- obs_2
+  xpred1[[i]] <- pred_1
+  xpred2[[i]] <- pred_2
+  xcoef1[[i]] <- coef(fit1)
+  xcoef1[[i]] <- coef(fit2)
+  xr21[[i]]<-(cor(pred_1, obs_1, method="pearson"))^2
+  xr22[[i]]<-(cor(pred_2, obs_2, method="pearson"))^2
+  s1<-sqrt(mean((obs_1-pred_1)^2))
+  s2<-sqrt(mean((obs_2-pred_2)^2))
+  xNrmse1[[i]]<-(s1/(max(obs_1)-min(obs_1)))*100
+  xNrmse2[[i]]<-(s2/(max(obs_2)-min(obs_2)))*100
+  lm1 = lm(pred_1 ~ obs_1-1)
+  lm2 = lm(pred_2 ~ obs_2-1)
+  xbias1[[i]] <-1-coef(lm1)
+  xbias1[[i]] <-1-coef(lm1)
+  
+}
+
+summary( unlist(xr21) )
+summary( unlist(xr22) )
+
+save.image("peatland.RData")
