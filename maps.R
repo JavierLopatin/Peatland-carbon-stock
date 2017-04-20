@@ -120,6 +120,8 @@ C_map <- predict_aerial_maps(PLS)
 
 plot(C_map)
 
+#writeRaster(C_map, filename = "above.map.tif", format="GTiff", overwrite=T)
+
 ##########################
 ### Predict underground C stock
 predict_underground_maps <- function(PLS2){ 
@@ -172,6 +174,8 @@ predict_underground_maps <- function(PLS2){
 C_map2 <- predict_underground_maps(PLS2)
 
 plot(C_map2)
+
+#writeRaster(C_map2, filename = "under.map.tif", format="GTiff", overwrite=T)
 
 save.image("peatland.RData")
 
@@ -286,6 +290,8 @@ cv_map <- cv_class(cv_maps, "cv_map")
 # cv_map <- stack("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try/CV/cv_maps.tif")
 plot(cv_map, zlim=c(0,60))
 
+#writeRaster(cv_map, filename = "above.cv.map.tif", format="GTiff", overwrite=T)
+
 save.image("peatland.RData")
 
 ##################
@@ -299,6 +305,8 @@ cv_maps <- rasterList(fileExtantion = ".tif", folder = "pred_maps2",
 cv_map2 <- cv_class(cv_maps, "cv_map2")
 # cv_map2 <- stack("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try/CV/cv_map2.tif")
 plot(cv_map2)
+
+#writeRaster(cv_map2, filename = "under.cv.map.tif", format="GTiff", overwrite=T)
 
 save.image("peatland.RData")
 
