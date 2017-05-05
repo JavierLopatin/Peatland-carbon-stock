@@ -37,18 +37,28 @@ plot(m2data$x, pred_m2)
 # maps predictions
 hyper <- stack("D:/out_P1/hyper_P1_2m.tif")
 names(hyper) <- paste0( rep("B", 41), seq(1,41,1) )
+hyper[hyper==0]<- NA
 
 DCM <- stack("D:/out_P1/treesvis/ndsm/DCM_2m.tif")
 names(DCM) <- "H"
 
-DCM2 <- resample(DCM, hyper,resample='bilinear')
+DCM2 <- resample(DCM2, hypr, resample='bilinear')
 r <- stack(DCM2, hyper)
 r[r$H > 2] <- NA # height mask
 r[r$H < 0] <- NA
 plot(r[[2]])
 
+### create NDVI mask
+NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
+#NDVI <- mask(NDVI, DCM2) # exclude trees
+NDVI[NDVI<0.3] <- NA
+plot(NDVI)
+r <- mask(r, NDVI)
+
+
 r2 <- autopls::prepro(r, method = "bn")
 names(r2) <- names(r)
+plot(r2[[2]])
 
 # spp
 ordi_sp = predict(m1, r, type="response")
@@ -64,15 +74,10 @@ save.image("peatland.RData")
 ###################
 
 # match the images
-hyper <- resample(hyper, DCM, resample="bilinear")
-ordi_sp <- resample(ordi_sp, DCM, resample='bilinear')
-ordi_pft <- resample(ordi_sp, DCM, resample='bilinear')
+#hyper <- resample(hyper, DCM2, resample="bilinear")
+#ordi_sp <- resample(ordi_sp, DCM2, resample='bilinear')
+#ordi_pft <- resample(ordi_pft, DCM2, resample='bilinear')
 
-### create NDVI mask
-NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
-NDVI <- mask(NDVI, DCM) # exclude trees
-NDVI[NDVI<0.3] <- NA
-plot(NDVI)
 
 ##########################
 ### Predict aerial C stock
@@ -307,6 +312,100 @@ cv_map2 <- cv_class(cv_maps, "cv_map2")
 plot(cv_map2)
 
 #writeRaster(cv_map2, filename = "under.cv.map.tif", format="GTiff", overwrite=T)
+
+save.image("peatland.RData")
+
+
+
+##############################################################
+## influences map
+
+# Effects on aerial Carbon Stock
+# selecting effects ('active' rows)
+good_rows_C = c(5,9,12,14,15)
+# 'active' effects in matrix format
+path_effs_C = as.matrix(PLS$effects[good_rows_C, 2:4])
+# add rownames to path_effs
+rownames(path_effs_C) = colnames(above.inner)[1:(length(above.inner[,1])-1)]
+# Effects on soil Carbon Stock 
+good_rows_C2 = c(6, 11, 15, 18, 20, 21)
+path_effs_C2 = as.matrix(PLS2$effects[good_rows_C2, 2:4])
+rownames(path_effs_C2) = c("H","FC","Cov","Rich","BM","Depth")
+path_effs_C2
+
+
+### Aboveground C
+Scores = PLS$scores
+# prepare data
+rescale <- function(x, from, to) {
+  maxx <- maxValue(x)
+  minx <- minValue(x)
+  out <- (to - from) * (x - minx)
+  out <- out / (maxx - minx)
+  out + from
+}
+H.map <- rescale(DCM2, min(Scores[,1]),max(Scores[,1])) 
+FC_map <- ((ordi_sp*PLS$outer_model$weight[2])+(ordi_pft*PLS$outer_model$weight[3])); FC_map[FC_map>max(Scores[2,])]<- NA
+cov.map <- PLS$inner_mode$Cov[1] + DCM2*PLS$inner_mode$Cov[2] + FC_map*PLS$inner_mode$Cov[3]; cov.map[cov.map>1]<- NA
+BM.map  <- PLS$inner_mode$BM[1] + DCM2*PLS$inner_mode$BM[2] + FC_map*PLS$inner_mode$BM[3] +
+            cov.map*PLS$inner_mode$BM[4] 
+BM.map[BM.map>max(Scores[4,])]<- NA; BM.map[BM.map < -1]<- NA
+Rich.map<- PLS$inner_mode$Rich[1] + DCM2*PLS$inner_mode$Rich[2] + FC_map*PLS$inner_mode$Rich[3] +
+            cov.map*PLS$inner_mode$Rich[4] + BM.map*PLS$inner_mode$Rich[5]
+Rich.map[Rich.map>max(Scores[5,])]<- NA; Rich.map[Rich.map < -2]<- NA
+
+plot(H.map)
+plot(FC_map)
+plot(cov.map) # cut above
+plot(BM.map) # cut below
+plot(Rich.map) # cut below
+
+# Weighted mean values
+## direct effects
+dir.eff <- ( DCM2*path_effs_C[1,1] + FC_map*path_effs_C[2,1] + cov.map*path_effs_C[3,1] +
+           BM.map*path_effs_C[4,1] + Rich.map*path_effs_C[5,1] )/sum(path_effs_C[,1])
+## indirect effects
+indir.eff <- ( DCM2*path_effs_C[1,2] + FC_map*path_effs_C[2,2] + cov.map*path_effs_C[3,2] +
+  BM.map*path_effs_C[4,2] + Rich.map*path_effs_C[5,2] )/sum(path_effs_C[,2]) 
+## total effects
+tot.eff <- ( DCM2*path_effs_C[1,3] + FC_map*path_effs_C[2,3] + cov.map*path_effs_C[3,3] +
+  BM.map*path_effs_C[4,3] + Rich.map*path_effs_C[5,3] )/sum(path_effs_C[,3])
+
+plot(dir.eff)
+plot(indir.eff)
+plot(tot.eff)
+
+### Underground C
+Scores = PLS2$scores
+H.map <- rescale(DCM2, min(Scores[,1]),max(Scores[,1])) 
+FC_map <-  ((ordi_sp*PLS2$outer_model$weight[2])+(ordi_pft*PLS2$outer_model$weight[3])); FC_map[FC_map>max(Scores[2,])]<- NA
+cov.map <-  PLS2$inner_mode$Cov[1] + DCM2*PLS2$inner_mode$Cov[2] + FC_map*PLS2$inner_mode$Cov[3]; cov.map[cov.map>max(Scores[3,])]<- NA
+BM.map  <-  PLS2$inner_mode$BM[1] + DCM2*PLS2$inner_mode$BM[2] + FC_map*PLS2$inner_mode$BM[3] +
+            cov.map*PLS2$inner_mode$BM[4]; BM.map[BM.map>max(Scores[4,])]<- NA
+Rich.map<-  PLS2$inner_mode$Rich[1] + DCM2*PLS2$inner_mode$Rich[2] + FC_map*PLS2$inner_mode$Rich[3] +
+            cov.map*PLS2$inner_mode$Rich[4] + BM.map*PLS2$inner_mode$Rich[5]; Rich.map[Rich.map>max(Scores[5,])]<- NA
+Depth.map<- PLS2$inner_mode$Depth[1] + DCM2*PLS2$inner_mode$Depth[2] + FC_map*PLS2$inner_mode$Depth[3] +
+            cov.map*PLS2$inner_mode$Depth[4] + BM.map*PLS2$inner_mode$Depth[5] + Rich.map*PLS2$inner_mode$Depth[6]
+            Depth.map[Depth.map>max(Scores[6,])]<- NA
+
+plot(FC_map)
+plot(cov.map) # cut above
+plot(Rich.map) # cut below
+plot(Depth.map)      
+
+## direct effects
+dir.eff2 <- ( DCM2*path_effs_C2[1,1] + FC_map*path_effs_C2[2,1] + cov.map*path_effs_C2[3,1] +
+            BM.map*path_effs_C2[4,1] + Rich.map*path_effs_C2[5,1] + Depth.map*path_effs_C2[6,1] )/sum(path_effs_C2[,1])
+## indirect effects
+indir.eff2 <- (DCM2*path_effs_C2[1,2] + FC_map*path_effs_C2[2,2] + cov.map*path_effs_C2[3,2] +
+              BM.map*path_effs_C2[4,2] + Rich.map*path_effs_C2[5,2] + Depth.map*path_effs_C2[6,1])/sum(path_effs_C2[,2])
+## total effects
+tot.eff2 <- (DCM2*path_effs_C2[1,3] + FC_map*path_effs_C2[2,3] + cov.map*path_effs_C2[3,3] +
+            BM.map*path_effs_C2[4,3] + Rich.map*path_effs_C2[5,3] + Depth.map*path_effs_C2[6,1])/sum(path_effs_C2[,3])
+
+plot(dir.eff2)
+plot(indir.eff2)
+plot(tot.eff2)
 
 save.image("peatland.RData")
 

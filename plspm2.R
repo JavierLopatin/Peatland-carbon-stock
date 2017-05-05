@@ -11,7 +11,7 @@ library(plspm)
 setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 
 load("peatland.RData")
-load("ordination.RData")
+#load("ordination.RData")
 
 ### Load data ####
 data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
