@@ -83,6 +83,9 @@ PLS$gof
 PLS$path_coefs
 PLS$boot
 
+# save bootstrapping coefficient path
+#write.table(PLS$boot$paths, "path_aboveground.csv", sep = ",")
+
 # plot results
 innerplot(PLS, arr.pos = 0.35) # inner model
 
@@ -130,6 +133,9 @@ PLS2$inner_model
 PLS2$gof
 PLS2$path_coefs
 PLS2$boot
+
+# save bootstrapping coefficient path
+#write.table(PLS2$boot$paths, "path_underground.csv", sep = ",")
 
 # plot results
 innerplot(PLS2, arr.pos = 0.35) # inner model

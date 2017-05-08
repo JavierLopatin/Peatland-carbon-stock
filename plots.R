@@ -64,23 +64,22 @@ plot(H ~ C, data=above.scores, xlab="Aboveground C", ylab="Vegetation heights", 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(H ~ C, data=cons),lwd=2); abline(lm(H ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=2.5, y1=0,x2=2.5, y2=-0.5, var1=cons$H, var2=manag$H)
-mtext("(a)", side=3, line=0.7, adj=-0.4, cex=1.3, font=2)
-mtext("(i)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(a)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(FC ~ C, data=above.scores, xlab="Aboveground C", ylab="Floristic composition", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(FC ~ C, data=cons),lwd=2); abline(lm(FC ~ C, data=manag),lwd=2,lty=2)
 plot_r(x1=2.5, y1=-1,x2=2.5, y2=-1.5, var1=cons$FC, var2=manag$FC)
-mtext("(ii)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(Rich ~ C, data=above.scores, xlab="Aboveground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(Rich ~ C, data=cons),lwd=2); abline(lm(Rich ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=2, y1=2,x2=2, y2=1.5, var1=cons$Rich, var2=manag$Rich)
-mtext("(iii)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(c)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(BM ~ C, data=above.scores, xlab="Aboveground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(BM ~ C, data=cons),lwd=2); abline(lm(BM ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=-0.5, y1=4.1,x2=-0.5, y2=3.5, var1=cons$BM, var2=manag$BM)
-mtext("(iv)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(d)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 legend("bottomright", legend = c("Conservation", "Management"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n") 
 # aboveground
 under.scores <- data.frame(site=data$Uso, PLS2$scores)
@@ -92,23 +91,22 @@ plot(FC ~ C, data=under.scores, xlab="Underground C", ylab="Floristic compositio
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(FC ~ C, data=cons),lwd=2); abline(lm(FC ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=1.5, y1=-1, x2=1.5, y2=-1.5, var1=cons$FC, var2=manag$FC)
-mtext("(b)", side=3, line=0.7, adj=-0.4, cex=1.3, font=2)
-mtext("(i)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(e)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(Rich ~ C, data=under.scores, xlab="Underground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(Rich ~ C, data=cons),lwd=2); abline(lm(Rich ~ C, data=manag),lwd=2,lty=2)
 plot_r(x1=1.5, y1=2,x2=1.5, y2=1.5, var1=cons$Rich, var2=manag$Rich)
-mtext("(ii)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(f)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(BM ~ C, data=under.scores, xlab="Underground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(BM ~ C, data=cons),lwd=2);abline(lm(BM ~ C, data=manag),lwd=2,lty=2)
 plot_r(x1=1.5, y1=4,x2=1.5, y2=3.5, var1=cons$BM, var2=manag$BM)
-mtext("(iii)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(g)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 plot(Depth ~ C, data=under.scores, xlab="Underground C",  ylab="Soil depth", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(Depth ~ C, data=cons),lwd=2); abline(lm(Depth ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=1.7, y1=-0.3,x2=1.7, y2=-0.7, var1=cons$Depth, var2=manag$Depth)
-mtext("(iv)", side=3, line=0.5, adj=0, cex=1.1)
+mtext("(h)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 dev.off()
 
 
@@ -478,6 +476,6 @@ abline(0,0, lty=2)
 #
 par(mar=c(5, 5, 3, 3))
 plot( c(wl,920), coeff2, ylim=c(min(coeff2), max(coeff2)), type="h", xlab=expression(lambda(nm)), 
-      ylab="Coefficient", las=1, bty="l", cex=2, cex.lab=1.5 )
+      ylab="Coefficient", las=1, bty="l", cex=2, cex.lab=1.5)
 abline(0,0, lty=2)
 dev.off()
