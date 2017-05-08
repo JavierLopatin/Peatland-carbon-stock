@@ -67,7 +67,7 @@ innerplot(above.inner)
 above.modes = rep("A",6)
 
 # define list of indicators: what variables are associated with what latent variable: 
-above.outer = list (c("Altura_vegetacion_cm"),                               # heigts
+above.outer = list (c("Altura_vegetacion_cm"),                           # heigts
                 c("NNMDS.sp1","NMDS.PFT1"),                              # FC
                 c("NBryo_cover","NHerbs_cover","shrubs_cover"),          # Cover
                 c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"), # Biomass
@@ -201,7 +201,8 @@ cons.under.C   <- above_boot$group1$C[1] + Scores[,1]*above_boot$group1$C[2] + S
 ### check for the PLSPM models residuals ###
 ############################################
 
-library(ape) # Moran´s I
+library (ncf) # correlogram
+library(ape)  # Moran´s I
 
 ## function to obtain the residualds from the outer and inner model
 plspmRes <- function (m, Y = NULL)
@@ -287,9 +288,16 @@ xy.dists.inv[1:5, 1:5] # check
 
 #### Aboveground C stock model
 Moran.I(residuals1$inner_residuals[,4], xy.dists.inv)
+Mor1 <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,4], 
+                   increment = 10, resamp = 500, quiet = T)
+plot(Mor1); grid(); abline(0,0, lty=2)
 
 #### Underground C stock model
 Moran.I(residuals2$inner_residuals[,4], xy.dists.inv)
+Mor1 <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,4], 
+                  increment = 10, resamp = 500, quiet = T)
+plot(Mor1); grid(); abline(0,0, lty=2)
+
 
 ##################################
 ### ------------------------- ###
