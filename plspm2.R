@@ -100,52 +100,6 @@ innerplot(PLS, arr.pos = 0.35) # inner model
 
 save.image("peatland.RData")
 
-##############################################
-### Set the inner model
-# rows of the inner model matrix
-
-H       = c(0, 0, 0, 0, 0, 0, 0)
-FC      = c(0, 0, 0, 0, 0, 0, 0)
-Cov     = c(1, 1, 0, 0, 0, 0, 0)
-BM      = c(1, 1, 1, 0, 0, 0, 0)
-Rich    = c(1, 1, 1, 1, 0, 0, 0)
-Depth   = c(1, 1, 1, 1, 1, 0, 0)
-C       = c(1, 1, 1, 1, 1, 1, 0)
-
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-inner2 = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
-# plot the inner matrix
-innerplot(inner2)
-
-# save the inner design matrix
-#write.table(under.inner, "under.inner.csv", sep=",")
-
-### Set the outer model
-# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
-modes2 = rep("A",7)
-
-# change direction of variables
-data$NCarbono_R3_kg_m2 = data$Carbono_R3_kg_m2 * -1
-data$NR3.depth = data$R3.depth * -1
-
-outer2 = list (c("Altura_vegetacion_cm"),                            # heigts
-              c("NNMDS.sp1","NMDS.PFT1"),                               # FC
-              c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
-              c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
-              c("gramm_richness","Herb_richness"),                      # Richness
-              c("Peat.height","R1.depth", "R2.depth", "NR3.depth"),      # soil depth
-              c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2"))#, "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))
-#c("Carbono_Subterraneo_kg_m2"))                          # Carbon
-
-### Run PLSPM for aboveground C stock
-PLS2 = plspm(data, inner2, outer2, modes2, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
-PLS2$outer
-PLS2$inner_summary
-PLS2$inner_model
-PLS2$gof
-PLS2$path_coefs
-PLS2$boot
-
 
 ############################################
 ### check for the PLSPM models residuals ###
