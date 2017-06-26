@@ -9,12 +9,12 @@
 # selecting effects ('active' rows)
 good_rows_C = c(5,9,12,14,15)
 # 'active' effects in matrix format
-path_effs_C = as.matrix(PLS$effects[good_rows_C, 2:3])
+path_effs_C = as.matrix(PLS$effects[good_rows_C, 2:4])
 # add rownames to path_effs
 rownames(path_effs_C) = colnames(above.inner)[1:(length(above.inner[,1])-1)]
 # Effects on soil Carbon Stock 
 good_rows_C2 = c(6, 11, 15, 18, 20, 21)
-path_effs_C2 = as.matrix(PLS2$effects[good_rows_C2, 2:3])
+path_effs_C2 = as.matrix(PLS2$effects[good_rows_C2, 2:4])
 rownames(path_effs_C2) = c("H","FC","Cov","Rich","BM","Depth")
 
 # setting margin size
@@ -25,17 +25,17 @@ mat = layout(matrix(c(1,2), nrow = 1, ncol = 2, byrow = TRUE), widths=c(1,1.1))
 # barplots of total effects (direct + indirect)
 # aboveground C
 par(mar = c(3, 4.3, 1, 0.6))
-barplot(t(abs(path_effs_C)), border = NA, col = c("mediumpurple4", "lavender"), cex.lab=1.3,
-        las = 1, cex.names = 1.3, cex.axis = 1.3, ylim=c(0,1.1), ylab="Relative importance",
+barplot(t(abs(path_effs_C)), beside=T, border = NA, col = c("mediumpurple4", "mediumpurple2", "lavender"), cex.lab=1.3,
+        las = 1, cex.names = 1.3, cex.axis = 1.3, ylab="Relative importance", ylim=c(0,1.1),
         args.legend = list(x = "topleft", ncol = 2, border = NA, bty = "n", title = "", cex=1.5))
 mtext("(a)", side=3, line=-0.3, adj=0, cex=1.5, font=2)
-text(x=c(0.7, 4.3), y=c(0.8, 1.07), "*", cex=3)
+text(x=c(3.5, 15.5), y=c(0.56, 1.07), "*", cex=3)
 # underground C
-barplot(t(abs(path_effs_C2)), border = NA, col = c("mediumpurple4", "lavender"), ylab="Relative importance",
-        las = 1, cex.names = 1.3, cex.axis = 1.3,legend = c("Direct", "Indirect"),  ylim=c(0,1.1), cex.lab=1.3,
+barplot(t(abs(path_effs_C2)), beside=T, border = NA, col = c("mediumpurple4", "mediumpurple2", "lavender"), ylab="Relative importance",
+        las = 1, cex.names = 1.3, cex.axis = 1.3,legend = c("Direct", "Indirect", "Total"), cex.lab=1.3,ylim=c(0,1.1),
         args.legend = list(x = "topleft", ncol = 1, border = NA, bty = "n", title = "", cex=1.5))
 mtext("(b)", side=3, line=-0.3, adj=0, cex=1.5, font=2)
-text(x=c(6.7), y=c(1), "*", cex=3)
+text(x=c(23.5), y=c(0.95), "*", cex=3)
 dev.off()
 
 ################
@@ -51,62 +51,36 @@ plot_r <- function(x1, y1, x2, y2, var1, var2){
   text(x=x2, y=y2, bquote("r"["man"]~"="~ .(r2)), adj=c(0,1), cex=1.2)
 }
 
-pdf(file = "Figures/4.LV_effects.pdf", width=10, height=5)
-par(mfrow=c(2,4), mar=c(5, 5, 3, 1))
-# aboveground
-above.scores <- data.frame(site=data$Uso, PLS$scores)
-cons <- above.scores[above.scores$site=="Conservacion", ]
-manag <- above.scores[above.scores$site=="Productivo", ]
+#pdf(file = "Figures/LV_effects.pdf", width=12, height=3)
+par(mfrow=c(1,4), mar=c(5, 5, 3, 1))
+scores <- data.frame(site=data$Uso, PLS$scores)
+cons <- scores[scores$site=="Conservacion", ]
+manag <- scores[scores$site=="Productivo", ]
+# colour palette
 palette(c("mediumpurple4", "lavender"))
 # Create pointtype
 Spointtype <- factor(above.scores$site) 
-plot(H ~ C, data=above.scores, xlab="Aboveground C", ylab="Vegetation heights", cex.lab=1.4, cex=1.5, cex.axis=1.3,
+plot(H ~ FC, data=scores, xlab="Floristic composition", ylab="Vegetation heights", cex.lab=1.4, cex=1.5, cex.axis=1.3,
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(H ~ C, data=cons),lwd=2); abline(lm(H ~ C, data=manag),lwd=2, lty=2)
-plot_r(x1=2.5, y1=0,x2=2.5, y2=-0.5, var1=cons$H, var2=manag$H)
+abline(lm(H ~ FC, data=cons),lwd=2); abline(lm(H ~ FC, data=manag),lwd=2, lty=2)
+plot_r(x1=-1.7, y1=2.5, x2=-1.7, y2=2, var1=cons$H, var2=manag$H)
 mtext("(a)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(FC ~ C, data=above.scores, xlab="Aboveground C", ylab="Floristic composition", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
+plot(FC ~ BM, data=scores, xlab="Aboveground C", ylab="Floristic composition", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(FC ~ C, data=cons),lwd=2); abline(lm(FC ~ C, data=manag),lwd=2,lty=2)
+abline(lm(FC ~ BM, data=cons),lwd=2); abline(lm(FC ~ BM, data=manag),lwd=2,lty=2)
 plot_r(x1=2.5, y1=-1,x2=2.5, y2=-1.5, var1=cons$FC, var2=manag$FC)
 mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(Rich ~ C, data=above.scores, xlab="Aboveground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
+plot(Rich ~ C, data=scores, xlab="Underground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(Rich ~ C, data=cons),lwd=2); abline(lm(Rich ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=2, y1=2,x2=2, y2=1.5, var1=cons$Rich, var2=manag$Rich)
 mtext("(c)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(BM ~ C, data=above.scores, xlab="Aboveground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
+plot(BM ~ C, data=scores, xlab="Underground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
      pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
 abline(lm(BM ~ C, data=cons),lwd=2); abline(lm(BM ~ C, data=manag),lwd=2, lty=2)
 plot_r(x1=-0.5, y1=4.1,x2=-0.5, y2=3.5, var1=cons$BM, var2=manag$BM)
 mtext("(d)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-legend("bottomright", legend = c("Conservation", "Management"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n") 
-# aboveground
-under.scores <- data.frame(site=data$Uso, PLS2$scores)
-cons <- under.scores[under.scores$site=="Conservacion", ]
-manag <- under.scores[under.scores$site=="Productivo", ]
-# Create pointtype
-Spointtype <- factor(above.scores$site) 
-plot(FC ~ C, data=under.scores, xlab="Underground C", ylab="Floristic composition", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(FC ~ C, data=cons),lwd=2); abline(lm(FC ~ C, data=manag),lwd=2, lty=2)
-plot_r(x1=1.5, y1=-1, x2=1.5, y2=-1.5, var1=cons$FC, var2=manag$FC)
-mtext("(e)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(Rich ~ C, data=under.scores, xlab="Underground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(Rich ~ C, data=cons),lwd=2); abline(lm(Rich ~ C, data=manag),lwd=2,lty=2)
-plot_r(x1=1.5, y1=2,x2=1.5, y2=1.5, var1=cons$Rich, var2=manag$Rich)
-mtext("(f)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(BM ~ C, data=under.scores, xlab="Underground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(BM ~ C, data=cons),lwd=2);abline(lm(BM ~ C, data=manag),lwd=2,lty=2)
-plot_r(x1=1.5, y1=4,x2=1.5, y2=3.5, var1=cons$BM, var2=manag$BM)
-mtext("(g)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(Depth ~ C, data=under.scores, xlab="Underground C",  ylab="Soil depth", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(Depth ~ C, data=cons),lwd=2); abline(lm(Depth ~ C, data=manag),lwd=2, lty=2)
-plot_r(x1=1.7, y1=-0.3,x2=1.7, y2=-0.7, var1=cons$Depth, var2=manag$Depth)
-mtext("(h)", side=3, line=0.5, adj=0, cex=1.1, font=2)
+legend("topright", legend = c("Conservation", "Management"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n") 
 dev.off()
 
 
@@ -116,54 +90,68 @@ dev.off()
 ################
 
 # Scatterplots
-pdf(file = "Figures/scatterPlot.pdf", width=13, height=6)
-par(mfrow=c(1,2))
-## Aboveground C
+#pdf(file = "Figures/scatterPlot.pdf", width=8, height=8)
+par(mfrow=c(2,2))
+## Biomass
 par(mar=c(5, 5, 3, 3))
-Predicted = above.pred.data$pred
-Observed = above.pred.data$obs
 MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
 MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-plot(Observed, Predicted, xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue=255),bty="l",
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xaxs="i", yaxs="i",
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=3, lwd=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
+palette(c("mediumpurple4", "lavender"))
+Spointtype <- factor(pred.data$site) 
+plot(pred.BM ~ obs.BM, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,6), ylim=c(0,6), #main="Aboveground biomass",
+     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
+abline(0, 1, lty=1, lwd=2)
+lm1 = lm(pred.BM ~ obs.BM-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
-bias <-1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
+r2 = round(median( unlist(BM.r2) ),2)
+nRMSE = round(median( unlist(BM.Nrmse) ),2)
+bias =round(median( unlist(BM.bias) ),2)
 pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(3,2), cex=1.5, bty = "n")
-mtext("(a)", side=3, line=0.5, adj=0, cex=2)
+legend("bottomright", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n")
+mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
+       side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 
-## Underground C
+## Richness
 par(mar=c(5, 5, 3, 3))
-Predicted = under.pred.data$pred
-Observed = under.pred.data$obs
-plot(Observed,Predicted, col=rgb(0,0,0,50,maxColorValue=255), bty="l", xaxs="i", yaxs="i",
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xlim=c(0,25),ylim=c(0,25),
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=3, lwd=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
+plot(pred.Rich ~ obs.Rich, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,18), ylim=c(0,18),#main="Species richness", 
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab="Observed (N° spp)", ylab="Predicted (N° spp)")
+abline(0, 1, lty=1, lwd=2)
+lm1 = lm(pred.Rich ~ obs.Rich-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
-bias <- 1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
+r2 = round(median( unlist(Rich.r2) ),2)
+nRMSE = round(median( unlist(Rich.Nrmse) ),2)
+bias =round(median( unlist(Rich.bias) ),2)
 pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-mtext("(b)", side=3, line=0.5, adj=0, cex=2)
+mtext( bquote(paste(bold("(b)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
+       side=3, line=0.5, adj=0.4, cex=1.1, font=2)
+legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(1,2),cex=1.2, bty="n")
+
+## Soil depth
+par(mar=c(5, 5, 3, 3))
+plot(pred.soil ~ obs.soil, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,88), ylim=c(0,88),# main="Soil depth",
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab="Observed (cm)", ylab="Predicted (cm)")
+abline(0, 1, lty=1, lwd=2)
+lm1 = lm(pred.soil ~ obs.soil-1, data=pred.data)
+abline(lm1, lty=2, lwd=2)
+r2 = round(median( unlist(soil.r2) ),2)
+nRMSE = round(median( unlist(soil.Nrmse) ),2)
+bias =round(median( unlist(soil.bias) ),2)
+pusr = par()$usr
+mtext( bquote(paste(bold("(c)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
+       side=3, line=0.5, adj=0.4, cex=1.1, font=2)
+## C stock
+par(mar=c(5, 5, 3, 3))
+plot(pred.C ~ obs.C, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,45), ylim=c(0,45),# main="Underground C stock",
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
+abline(0, 1, lty=1, lwd=2)
+lm1 = lm(pred.C ~ obs.C-1, data=pred.data)
+abline(lm1, lty=2, lwd=2)
+r2 = round(median( unlist(C.r2) ),2)
+nRMSE = round(median( unlist(C.Nrmse) ),2)
+bias =round(median( unlist(C.bias) ),2)
+pusr = par()$usr
+mtext( bquote(paste(bold("(d)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
+       side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 dev.off()
 
 
@@ -185,78 +173,124 @@ color <- colorRampPalette(c("blue", "cornflowerblue", "lightblue", "yellow", "da
 color2<- colorRampPalette(c("gray100", "gray50", "gray10"))
 
 # Plot
-pdf(file = "Figures/6.maps.pdf", width=10, height=8)
+#pdf(file = "Figures/7.pred_maps.pdf", width=10, height=8)
 par(mfrow=c(2,2))
-# Aerial carbon
+# Biomass
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
-plot(C_map, col=color(40), zlim=c(0,3), legend.shrink=1, legend.width=2, legend.mar=8,
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Aboveground biomass", axes=F)
+plot(med.BM, col=color(40), zlim=c(0,3), legend.shrink=1, legend.width=2, legend.mar=8, 
      axis.args=list(cex.axis=1),
-     legend.args=list(text=expression("kg m"^-2 ), side=4, line=2.3, cex=1), add=T)
+     legend.args=list(text=expression("kg m"^-2), side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(a)", side=3, line=0.5, adj=0, cex=1.5, font=2)
-# Underground carbon
+# Richness
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
-plot(C_map2, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
+plot(med.Rich3, col=color(40), zlim=c(5,20), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text=expression("kg m"^-2 ), side=4, line=2.5, cex=1), add=T)
+     legend.args=list(text="N° spp", side=4, line=2.5, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(b)", side=3, line=0.5, adj=0, cex=1.5, font=2)
-# aboveground CV map
+# Soil depth
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
-plot(cv_map, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, zlim=c(0,60), legend.mar=8,
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
+plot(med.Soil, col=color(40), zlim=c(15,80), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="CoeffVar (%)", side=4, line=2.3, cex=1), add=T)
+     legend.args=list(text="cm", side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(c)", side=3, line=0.5, adj=0, cex=1.5, font=2)
-# underground CV map
+# C stock
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, axes=F)
-plot(cv_map2, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, zlim=c(0,60), legend.mar=8,
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
+plot(med.C, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="CoeffVar (%)", side=4, line=2.3, cex=1), add=T)
+     legend.args=list(text=expression("kg m"^-2), side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(d)", side=3, line=0.5, adj=0, cex=1.5, font=2)
+dev.off()
+
+################
+### Figure X ###
+################
+
+# Coefficient of variation maps
+
+library(GISTools)
+library(rgdal)
+
+# Plot
+#pdf(file = "Figures/8.CV_maps.pdf", width=10, height=8)
+par(mfrow=c(2,2))
+# Biomass
+par(mar=c(0.3, 0.3, 1.8, 4))
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Aboveground biomass", axes=F)
+plot(coeffvar.BM, col=color(40), zlim=c(20,40), legend.shrink=1, legend.width=2, legend.mar=8, add=T)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+# Richness
+par(mar=c(0.3, 0.3, 1.8, 4))
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
+plot(coeffvar.Rich, col=color(40), zlim=c(5,10),legend.shrink=1, legend.width=2,  legend.mar=8, add=T)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+# Soil depth
+par(mar=c(0.3, 0.3, 1.8, 4))
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
+plot(coeffvar.Soil2, col=color(40), zlim=c(0,50),legend.shrink=1, legend.width=2, legend.mar=8, add=T)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+# C stock
+par(mar=c(0.3, 0.3, 1.8, 4))
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
+plot(coeffvar.C2, col=color(40),  zlim=c(0,50), legend.shrink=1, legend.width=2, legend.mar=8, add=T)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
 dev.off()
 
 ################
 ### Figure 8 ###
 ################
 
-# map influences
-
-# stack maps
-above.eff <- stack(dir.eff, indir.eff, tot.eff); names(above.eff)<-c("Direct", "Indirect", "Total")
-under.eff <- stack(dir.eff2, indir.eff2, tot.eff2); names(under.eff)<-c("Direct", "Indirect", "Total")
+# map of influences
+library(GISTools)
+library(rgdal)
+library(KITools)
 
 # RGB map
-pdf(file = "Figures/effect_maps2.pdf", width=10, height=8)
+pdf(file = "Figures/effect_maps.pdf", width=10, height=8)
 par(mfrow=c(2,2), mar=c(0.3, 0.5, 2, 4))
-# aboveground
-plotRGB(above.eff, r=3, g=2, b=1, scale=F, stretch="hist", colNA="white")
+# Biomass
+niceplot(BM_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(a)", side=3,line=-1.5, adj=0.01,  cex=1.5, font = 2)
-# underground
-plotRGB(under.eff, r=3, g=2, b=1, scale=F, stretch="hist")
+# Richness
+niceplot(Rich_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
-mtext("(b)", side=3, line=-1.5, adj=0.01, cex=1.5, font = 2)
+# Soil depth
+niceplot(Depth_RGB, r=1, g=2, b=3, stretch = 20)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+# C tock
+niceplot(C_RGB, r=1, g=2, b=3, stretch = 20)
+plot(limit, lwd=3, lty=2, add=T)
+north.arrow(xb=610430,yb=5362950,len=15,lab="North")
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
 dev.off()
 
 ### plot legend: color wheel
+
 library(ggplot2)
 library(grid)
 library(gtable)
@@ -309,7 +343,7 @@ dev.off()
 #################################
 
 # path coefficients between conservation and management areas
-pdf(file = "Figures/site_effects.pdf", width=10, height=4)
+#pdf(file = "Figures/site_effects.pdf", width=10, height=4)
 m=layout(mat = rbind(c(1,2)), widths = c(1,1.35))
 #layout.show(m)
 par(mar=c(5, 4, 3, 0.2))
@@ -352,7 +386,7 @@ xdat <- data.frame(H=data$Altura_vegetacion_cm, C=data$Carbono_total, Rich=data$
 fit1 <- envfit(nmds1, xdat)
 fit2 <- envfit(nmds2, xdat)
 
-pdf(file = "Figures/FC2.pdf", width=10, height=10)
+#pdf(file = "Figures/FC2.pdf", width=10, height=10)
 par(mfrow=c(2,2))
 # plot species ordination
 #par(mai=c(1,0.5,1,0.5))
@@ -416,7 +450,7 @@ dev.off()
 ### results using PLSR ###
 ##########################
 
-pdf(file = "Figures/scatterPLSR.pdf", width=13, height=6)
+#pdf(file = "Figures/scatterPLSR.pdf", width=13, height=6)
 par(mfrow=c(1,2))
 ## aerial C
 par(mar=c(5, 5, 3, 3))
@@ -467,7 +501,7 @@ dev.off()
 
 
 ### coefficients
-pdf(file = "Figures/PLSRCoeff.pdf", width=12, height=5)
+#pdf(file = "Figures/PLSRCoeff.pdf", width=12, height=5)
 par(mfrow=c(1,2))
 par(mar=c(5, 5, 3, 3))
 plot( c(wl,920), coeff1, ylim=c(min(coeff1), max(coeff1)), type="h", xlab=expression(lambda(nm)), 

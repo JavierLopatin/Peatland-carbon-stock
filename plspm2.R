@@ -44,55 +44,10 @@ data$NNMDS.sp1 <- data$NMDS.sp1 * -1
 
 names(data)
 
-#####################
-### Aboveground C ###
-#####################
 
-### Set the inner model
-# rows of the inner model matrix
-H       = c(0, 0, 0, 0, 0, 0)
-FC      = c(0, 0, 0, 0, 0, 0)
-Cov     = c(1, 1, 0, 0, 0, 0)
-BM      = c(1, 1, 1, 0, 0, 0)
-Rich    = c(1, 1, 1, 1, 0, 0)
-C       = c(1, 1, 1, 1, 1, 0)
-
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-above.inner = rbind(H, FC,  Cov, BM, Rich,  C) ; colnames(above.inner) = rownames(above.inner)
-# plot the inner matrix
-innerplot(above.inner)
-
-### Set the outer model
-# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
-above.modes = rep("A",6)
-
-# define list of indicators: what variables are associated with what latent variable: 
-above.outer = list (c("Altura_vegetacion_cm"),                           # heigts
-                c("NNMDS.sp1","NMDS.PFT1"),                              # FC
-                c("NBryo_cover","NHerbs_cover","shrubs_cover"),          # Cover
-                c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"), # Biomass
-                c("gramm_richness","Herb_richness","NShrub_richness"),   # Richness
-                c("Carbono_Aereo_total_kg_m2"))                          # Carbon
-
-### Run PLSPM for aboveground C stock
-PLS = plspm(data, above.inner, above.outer, above.modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
-PLS$outer
-PLS$inner_summary
-PLS$inner_model
-PLS$gof
-PLS$path_coefs
-PLS$boot
-
-# save bootstrapping coefficient path
-#write.table(PLS$boot$paths, "path_aboveground.csv", sep = ",")
-
-# plot results
-innerplot(PLS, arr.pos = 0.35) # inner model
-
-
-#####################
-### underground C ###
-#####################
+#########################
+### PLS path modeling ###
+#########################
 
 ### Set the inner model
 # rows of the inner model matrix
@@ -105,102 +60,91 @@ Depth   = c(1, 1, 1, 1, 1, 0, 0)
 C       = c(1, 1, 1, 1, 1, 1, 0)
 
 # matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-under.inner = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
+inner = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
 # plot the inner matrix
-innerplot(under.inner)
+innerplot(inner)
+
+# save the inner design matrix
+#write.table(under.inner, "under.inner.csv", sep=",")
 
 ### Set the outer model
 # set the "Modes" of the relations: character vector indicating the type of measurement for each block.
-under.modes = rep("A",7)
+modes = rep("A",7)
 
 # change direction of variables
 data$NCarbono_R3_kg_m2 = data$Carbono_R3_kg_m2 * -1
 
-under.outer = list (c("Altura_vegetacion_cm"),                            # heigts
-                c("NNMDS.sp1","NMDS.PFT1"),                               # FC
-                c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
-                c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
-                c("gramm_richness","Herb_richness"),                      # Richness
-                c("depth"),                                               # soil depth
-                c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2"))#, "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))
-                #c("Carbono_Subterraneo_kg_m2"))                          # Carbon
+outer = list (c("Altura_vegetacion_cm"),                            # heigts
+              c("NNMDS.sp1","NMDS.PFT1"),                               # FC
+              c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
+              c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
+              c("gramm_richness","Herb_richness"),                      # Richness
+              c("depth"),                                               # soil depth
+              c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2"))#, "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))
+              #c("Carbono_Subterraneo_kg_m2"))                          # Carbon
 
 ### Run PLSPM for aboveground C stock
-PLS2 = plspm(data, under.inner, under.outer, under.modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS = plspm(data, inner, outer, modes, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
+PLS$outer
+PLS$inner_summary
+PLS$inner_model
+PLS$gof
+PLS$path_coefs
+PLS$boot
+
+# save bootstrapping coefficient path
+write.table(PLS$effects, "effects.csv", sep = ",")
+
+# plot results
+innerplot(PLS, arr.pos = 0.35) # inner model
+
+save.image("peatland.RData")
+
+##############################################
+### Set the inner model
+# rows of the inner model matrix
+
+H       = c(0, 0, 0, 0, 0, 0, 0)
+FC      = c(0, 0, 0, 0, 0, 0, 0)
+Cov     = c(1, 1, 0, 0, 0, 0, 0)
+BM      = c(1, 1, 1, 0, 0, 0, 0)
+Rich    = c(1, 1, 1, 1, 0, 0, 0)
+Depth   = c(1, 1, 1, 1, 1, 0, 0)
+C       = c(1, 1, 1, 1, 1, 1, 0)
+
+# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+inner2 = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
+# plot the inner matrix
+innerplot(inner2)
+
+# save the inner design matrix
+#write.table(under.inner, "under.inner.csv", sep=",")
+
+### Set the outer model
+# set the "Modes" of the relations: character vector indicating the type of measurement for each block.
+modes2 = rep("A",7)
+
+# change direction of variables
+data$NCarbono_R3_kg_m2 = data$Carbono_R3_kg_m2 * -1
+data$NR3.depth = data$R3.depth * -1
+
+outer2 = list (c("Altura_vegetacion_cm"),                            # heigts
+              c("NNMDS.sp1","NMDS.PFT1"),                               # FC
+              c("NBryo_cover","NHerbs_cover","shrubs_cover"),           # Cover
+              c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
+              c("gramm_richness","Herb_richness"),                      # Richness
+              c("Peat.height","R1.depth", "R2.depth", "NR3.depth"),      # soil depth
+              c("Carbono_musgo_kg_m2", "Carbono_R1_kg_m2"))#, "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))
+#c("Carbono_Subterraneo_kg_m2"))                          # Carbon
+
+### Run PLSPM for aboveground C stock
+PLS2 = plspm(data, inner2, outer2, modes2, maxiter= 1000, boot.val = T, br = 1000, scheme = "factor", scaled = T)
 PLS2$outer
 PLS2$inner_summary
 PLS2$inner_model
 PLS2$gof
 PLS2$path_coefs
 PLS2$boot
-
-# save bootstrapping coefficient path
-#write.table(PLS2$boot$paths, "path_underground.csv", sep = ",")
-
-# plot results
-innerplot(PLS2, arr.pos = 0.35) # inner model
-
-save.image("peatland.RData")
-
-###################################
-### Fit PLS-PM models per site ####
-###################################
-
-### compare by permutation procedure
-# Run PLSPM for aboveground C stock
-above_boot = plspm.groups(PLS, data$Uso, method = "permutation", reps=1000)
-above_boot$test
-
-# underground C stock
-under_boot = plspm.groups(PLS2, data$Uso, method = "permutation", reps=1000)
-under_boot$test
-
-### predict models
-## aboveground model 
-# Conservation site
-Scores <- PLS$scores
-cons.above.cov  <- above_boot$group1$Cov[1] + Scores[,1]*above_boot$group1$Cov[2] + Scores[,2]*above_boot$group1$Cov[3]
-cons.above.BM   <- above_boot$group1$BM[1] + Scores[,1]*above_boot$group1$BM[2] + Scores[,2]*above_boot$group1$BM[3] +
-                   Scores[,3]*above_boot$group1$BM[4]
-cons.above.Rich <- above_boot$group1$Rich[1] + Scores[,1]*above_boot$group1$Rich[2] + Scores[,2]*above_boot$group1$Rich[3] +
-                   Scores[,3]*above_boot$group1$Rich[4] + Scores[,4]*above_boot$group1$Rich[5]
-cons.above.C    <- above_boot$group1$C[1] + Scores[,1]*above_boot$group1$C[2] + Scores[,2]*above_boot$group1$C[3] +
-                   Scores[,3]*above_boot$group1$C[4] + Scores[,4]*above_boot$group1$C[5] + Scores[,5]*above_boot$group1$C[6]
-# obtain fit
-cor(cons.above.cov, Scores[,3], method="pearson")^2  # cov
-cor(cons.above.Rich, Scores[,5], method="pearson")^2 # Rich
-cor(cons.above.BM, Scores[,4], method="pearson")^2   # BM
-cor(cons.above.C, Scores[,6], method="pearson")^2    # C
-
-# Management site
-cons.above.cov  <- above_boot$group2$Cov[1] + Scores[,1]*above_boot$group2$Cov[2] + Scores[,2]*above_boot$group2$Cov[3]
-cons.above.BM   <- above_boot$group2$BM[1] + Scores[,1]*above_boot$group2$BM[2] + Scores[,2]*above_boot$group2$BM[3] +
-                   Scores[,3]*above_boot$group2$BM[4]
-cons.above.Rich <- above_boot$group2$Rich[1] + Scores[,1]*above_boot$group2$Rich[2] + Scores[,2]*above_boot$group2$Rich[3] +
-                   Scores[,3]*above_boot$group2$Rich[4] + Scores[,4]*above_boot$group2$Rich[5]
-cons.above.C    <- above_boot$group2$C[1] + Scores[,1]*above_boot$group2$C[2] + Scores[,2]*above_boot$group2$C[3] +
-                   Scores[,3]*above_boot$group2$C[4] + Scores[,4]*above_boot$group2$C[5] + Scores[,5]*above_boot$group2$C[6]
-# obtain fit
-cor(cons.above.cov, Scores[,3], method="pearson")^2  # cov
-cor(cons.above.Rich, Scores[,5], method="pearson")^2 # Rich
-cor(cons.above.BM, Scores[,4], method="pearson")^2   # BM
-cor(cons.above.C, Scores[,6], method="pearson")^2    # C
-
-
-
-
-# underground model
-Scores <- PLS2$scores
-cons.under.cov <- above_boot$group1$Cov[1] + Scores[,1]*above_boot$group1$Cov[2] + Scores[,2]*above_boot$group1$Cov[3]
-cons.under.BM  <- above_boot$group1$BM[1] + Scores[,1]*above_boot$group1$BM[2] + Scores[,2]*above_boot$group1$BM[3] +
-                  Scores[,3]*above_boot$group1$BM[4]
-cons.under.Rich <- above_boot$group1$Rich[1] + Scores[,1]*above_boot$group1$Rich[2] + Scores[,2]*above_boot$group1$Rich[3] +
-                   Scores[,3]*above_boot$group1$Rich[4] + Scores[,4]*above_boot$group1$Rich[5]
-cons.under.Depth <-above_boot$group1$Depth[1] + Scores[,1]*above_boot$group1$Depth[2] + Scores[,2]*above_boot$group1$Depth[3] +
-                   Scores[,3]*above_boot$group1$Depth[4] + Scores[,4]*above_boot$group1$Depth[5] + Scores[,5]*above_boot$group1$Depth[6]
-cons.under.C   <- above_boot$group1$C[1] + Scores[,1]*above_boot$group1$C[2] + Scores[,2]*above_boot$group1$C[3] +
-                  Scores[,3]*above_boot$group1$C[4] + Scores[,4]*above_boot$group1$C[5] + Scores[,5]*above_boot$group1$C[6] +
-                  Scores[,6]*above_boot$group1$C[7]
 
 
 ############################################
@@ -279,8 +223,7 @@ plspmRes <- function (m, Y = NULL)
   return (out)
 } 
 
-residuals1 <- plspmRes(PLS)
-residuals2 <- plspmRes(PLS2)
+residuals <- plspmRes(PLS)
 
 # get the plot coordinates
 xy <- data.frame( x=data$Coordenada_X_WGS84, y=data$Coordenada_Y_WGS84 )
@@ -292,17 +235,29 @@ xy.dists.inv <- 1/xy.dists # invers
 diag(xy.dists.inv) <- 0
 xy.dists.inv[1:5, 1:5] # check
 
-#### Aboveground C stock model
-Moran.I(residuals1$inner_residuals[,4], xy.dists.inv)
-Mor1 <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,4], 
+#### Aboveground biomass 
+moran.BM <- Moran.I(residuals$inner_residuals[,2], xy.dists.inv); moran.BM
+corr.BM <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,2], 
                    increment = 10, resamp = 500, quiet = T)
-plot(Mor1); grid(); abline(0,0, lty=2)
+plot(corr.BM); grid(); abline(0,0, lty=2)
 
-#### Underground C stock model
-Moran.I(residuals2$inner_residuals[,4], xy.dists.inv)
-Mor1 <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,4], 
+#### Species richness
+moran.Rich <- Moran.I(residuals$inner_residuals[,3], xy.dists.inv); moran.Rich
+corr.Rich <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,3], 
                   increment = 10, resamp = 500, quiet = T)
-plot(Mor1); grid(); abline(0,0, lty=2)
+plot(corr.Rich); grid(); abline(0,0, lty=2)
+
+#### Soil depht
+moran.soil <- Moran.I(residuals$inner_residuals[,4], xy.dists.inv); moran.soil
+corr.soil <- correlog (xy[,1], xy[,2], z = residuals$inner_residuals[,4], 
+                  increment = 10, resamp = 500, quiet = T)
+plot(corr.soil); grid(); abline(0,0, lty=2)
+
+#### Underground C stock 
+moran.C <- Moran.I(residuals$inner_residuals[,5], xy.dists.inv); moran.C
+corr.C <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,5], 
+                  increment = 10, resamp = 500, quiet = T)
+plot(corr.C); grid(); abline(0,0, lty=2)
 
 
 ##################################
@@ -310,8 +265,7 @@ plot(Mor1); grid(); abline(0,0, lty=2)
 ### Plot analysis
 
 # rescaling scores. So the LV have the same scale than the manifest variables
-aboveground.scores = plspm::rescale(PLS)
-underground.scores = plspm::rescale(PLS2)
+rescaled.scores = plspm::rescale(PLS)
 
 # Pairs plot
 panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
@@ -324,8 +278,7 @@ panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
   if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
   text(0.5, 0.5, txt, cex = cex.cor * r)
 }
-pairs(aboveground.scores, pch = 16, col = "blue", panel=panel.smooth, upper.panel=panel.cor)
-pairs(underground.scores, pch = 16, col = "blue", panel=panel.smooth, upper.panel=panel.cor)
+pairs(rescaled.scores, pch = 16, col = "blue", panel=panel.smooth, upper.panel=panel.cor)
 
 save.image("peatland.RData")
 
@@ -338,22 +291,42 @@ nnorm <- function(x, y){
   x
 }
 
-#### Abovegroun C stock
-set.seed(123)
-
 # set the bootstrap parameters
 N = nrow(data) # N° of observations
 B = 500             # N° of bootstrap iterations
 
 # run bootstrapping
-above.site <- list()
-above.obs <- list()
-above.pred <- list()
-above.r2 <- list()
-above.rmse <- list()
-above.Nrmse <- list()
-above.bias <- list()
+site <- list()
+# BM
+BM.obs <- list()
+BM.pred <- list()
+BM.r2 <- list()
+BM.rmse <- list()
+BM.Nrmse <- list()
+BM.bias <- list()
+# Rich
+Rich.obs <- list()
+Rich.pred <- list()
+Rich.r2 <- list()
+Rich.rmse <- list()
+Rich.Nrmse <- list()
+Rich.bias <- list()
+# Soil depth
+soil.obs <- list()
+soil.pred <- list()
+soil.r2 <- list()
+soil.rmse <- list()
+soil.Nrmse <- list()
+soil.bias <- list()
+# C stock
+C.obs <- list()
+C.pred <- list()
+C.r2 <- list()
+C.rmse <- list()
+C.Nrmse <- list()
+C.bias <- list()
 
+set.seed(123)
 for(i in 1:B){
   
   # create random numbers with replacement to select samples from each group
@@ -363,117 +336,94 @@ for(i in 1:B){
   train <- data[idx,]
   
   ### Run PLSPM for aboveground C stock
-  PLSrun = plspm(train, above.inner, above.outer, above.modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+  PLSrun = plspm(train, inner, outer, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   
   # model scores
   Scores <- PLSrun$scores
+  rescaled.run <- plspm::rescale(PLSrun)
  
-  # cascade prediction
-  cov.pred <- PLSrun$inner_mode$Cov[1] + Scores[,1]*PLSrun$inner_mode$Cov[2] + Scores[,2]*PLSrun$inner_mode$Cov[3]
-  BM.pred  <- PLSrun$inner_mode$BM[1] + Scores[,1]*PLSrun$inner_mode$BM[2] + Scores[,2]*PLSrun$inner_mode$BM[3] +
-              cov.pred*PLSrun$inner_mode$BM[4]
-  Rich.pred<- PLSrun$inner_mode$Rich[1] + Scores[,1]*PLSrun$inner_mode$Rich[2] + Scores[,2]*PLSrun$inner_mode$Rich[3] +
-              cov.pred*PLSrun$inner_mode$Rich[4] + BM.pred*PLSrun$inner_mode$Rich[5]
-  C.pred   <- PLSrun$inner_mode$C[1] + Scores[,1]*PLSrun$inner_mode$C[2] + Scores[,2]*PLSrun$inner_mode$C[3] +
-    Scores[,3]*PLSrun$inner_mode$C[4] + Scores[,4]*PLSrun$inner_mode$C[5] + Scores[,5]*PLSrun$inner_mode$C[6]
-
-  PRED <- nnorm(C.pred, train$Carbono_Aereo_total_kg_m2)
+  # stepwise prediction
+  BM    <- PLSrun$inner_mode$BM[1] + Scores[,1]*PLSrun$inner_mode$BM[2]
+  Rich  <- PLSrun$inner_mode$Rich[1] + Scores[,1]*PLSrun$inner_mode$Rich[2] + Scores[,2]*PLSrun$inner_mode$Rich[3]
+  Depth <- PLSrun$inner_mode$Depth[1] + Scores[,4]*PLSrun$inner_mode$Depth[5] + Scores[,5]*PLSrun$inner_mode$Depth[6]
+  C     <- PLSrun$inner_mode$C[1] + Scores[,1]*PLSrun$inner_mode$C[2] + Scores[,6]*PLSrun$inner_mode$C[7]
   
+  # rescale LVs
+  BM.PRED <- nnorm(BM, rescaled.run$BM)
+  Rich.PRED <- nnorm(Rich, rescaled.run$Rich)
+  soil.PRED <- nnorm(Depth,rescaled.run$Depth)
+  C.PRED <- nnorm(C, rescaled.run$C)
+
   # store the model accuracies
-  OBS <- nnorm(Scores[,6], train$Carbono_Aereo_total_kg_m2)
-  above.site[[i]] <- train$Uso
-  above.obs[[i]] <- OBS
-  above.pred[[i]] <- PRED
-  above.r2[[i]]<-(cor(PRED, OBS, method="pearson"))^2
-  s1<-sqrt(mean((OBS-PRED)^2))
-  above.rmse[[i]]<-s1
-  above.Nrmse[[i]]<-(s1/(max(OBS)-min(OBS)))*100
-  lm = lm(PRED ~ OBS-1)
-  above.bias[[i]] <-1-coef(lm)
+  site[[i]] <- train$Uso
+  
+  BM.OBS <- nnorm(Scores[,4], train$Carbono_Aereo_total_kg_m2)
+  BM.obs[[i]] <- BM.OBS
+  BM.pred[[i]] <- BM.PRED
+  BM.r2[[i]]<-(cor(BM.PRED, BM.OBS, method="pearson"))^2
+  s1<-sqrt(mean((BM.OBS - BM.PRED)^2))
+  BM.rmse[[i]]<-s1
+  BM.Nrmse[[i]]<-(s1/(max(BM.OBS)-min(BM.OBS)))*100
+  lm = lm(BM.PRED ~ BM.OBS-1)
+  BM.bias[[i]] <-1-coef(lm)
+  
+  Rich.OBS <- nnorm(Scores[,5], train$Riqueza_Total)
+  Rich.obs[[i]] <- Rich.OBS
+  Rich.pred[[i]] <- Rich.PRED
+  Rich.r2[[i]]<-(cor(Rich.PRED, Rich.OBS, method="pearson"))^2
+  s1<-sqrt(mean((Rich.OBS - Rich.PRED)^2))
+  Rich.rmse[[i]]<-s1
+  Rich.Nrmse[[i]]<-(s1/(max(Rich.OBS)-min(Rich.OBS)))*100
+  lm = lm(Rich.PRED ~ Rich.OBS-1)
+  Rich.bias[[i]] <-1-coef(lm)
+  
+  soil.OBS <- nnorm(Scores[,6], train$depth)
+  soil.obs[[i]] <- soil.OBS
+  soil.pred[[i]] <- soil.PRED
+  soil.r2[[i]]<-(cor(soil.PRED, soil.OBS, method="pearson"))^2
+  s1<-sqrt(mean((soil.OBS - soil.PRED)^2))
+  soil.rmse[[i]]<-s1
+  soil.Nrmse[[i]]<-(s1/(max(soil.OBS)-min(soil.OBS)))*100
+  lm = lm(soil.PRED ~ soil.OBS-1)
+  soil.bias[[i]] <-1-coef(lm)
+  
+  C.OBS <- nnorm(Scores[,7], train$Carbono_Subterraneo_kg_m2)
+  C.obs[[i]] <- C.OBS
+  C.pred[[i]] <- C.PRED
+  C.r2[[i]]<-(cor(C.PRED, C.OBS, method="pearson"))^2
+  s1<-sqrt(mean((C.OBS - C.PRED)^2))
+  C.rmse[[i]]<-s1
+  C.Nrmse[[i]]<-(s1/(max(C.OBS)-min(C.OBS)))*100
+  lm = lm(C.PRED ~ C.OBS-1)
+  C.bias[[i]] <-1-coef(lm)
     
 }
 
-summary(unlist(above.r2))
-summary(unlist(above.Nrmse))
-summary(unlist(above.bias))
+summary(unlist(BM.r2))
+summary(unlist(Rich.r2))
+summary(unlist(soil.r2))
+summary(unlist(C.r2))
 
-# data must be rescales so the LV have the same scale than the manifest variables
-above.pred.data <- data.frame(site=unlist(above.site), pred=unlist(above.pred) , obs=unlist(above.obs))
+summary(unlist(BM.Nrmse))
+summary(unlist(Rich.Nrmse))
+summary(unlist(soil.Nrmse))
+summary(unlist(C.Nrmse))
 
-plot(pred~obs, data=above.pred.data)
+pred.data <- data.frame(site=unlist(site), 
+                        pred.BM=unlist(BM.pred), obs.BM=unlist(BM.obs),
+                        pred.Rich=unlist(Rich.pred), obs.Rich=unlist(Rich.obs),
+                        pred.soil=unlist(soil.pred), obs.soil=unlist(soil.obs),
+                        pred.C=unlist(C.pred), obs.C=unlist(C.obs))
+
+plot(pred.BM ~ obs.BM, data=pred.data)
+abline(0,1)
+plot(pred.Rich ~ obs.Rich, data=pred.data)
+abline(0,1)
+plot(pred.soil ~ obs.soil, data=pred.data)
+abline(0,1)
+plot(pred.C ~ obs.C, data=pred.data)
 abline(0,1)
 
-#######################
-#### underground Carbon
-#######################
-
-set.seed(123)
-
-# set the bootstrap parameters
-N = nrow(data) # N° of observations
-B = 500             # N° of bootstrap iterations
-
-# run bootstrapping
-under.site <- list()
-under.obs <- list()
-under.pred <- list()
-under.r2 <- list()
-under.rmse <- list()
-under.Nrmse <- list()
-under.bias <- list()
-
-for(i in 1:B){
-  
-  # create random numbers with replacement to select samples from each group
-  idx = sample(1:N, N, replace=TRUE)
-  
-  # select subsets of the five groups based on the random numbers
-  train <- data[idx,]
-  #OBS <- train$Carbono_Subterraneo_kg_m2
-  
-  ### Run PLSPM for aboveground C stock
-  PLSrun = plspm(train, under.inner, under.outer, under.modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
-  # model scores
-  Scores <- PLSrun$scores
-  
-  # cascade prediction
-  cov.pred <- PLSrun$inner_mode$Cov[1] + Scores[,1]*PLSrun$inner_mode$Cov[2] + Scores[,2]*PLSrun$inner_mode$Cov[3]
-  BM.pred  <- PLSrun$inner_mode$BM[1] + Scores[,1]*PLSrun$inner_mode$BM[2] + Scores[,2]*PLSrun$inner_mode$BM[3] +
-              cov.pred*PLSrun$inner_mode$BM[4]
-  Rich.pred<- PLSrun$inner_mode$Rich[1] + Scores[,1]*PLSrun$inner_mode$Rich[2] + Scores[,2]*PLSrun$inner_mode$Rich[3] +
-              cov.pred*PLSrun$inner_mode$Rich[4] + BM.pred*PLSrun$inner_mode$Rich[5]
-  Depth.pred<-PLSrun$inner_mode$Depth[1] + Scores[,1]*PLSrun$inner_mode$Depth[2] + Scores[,2]*PLSrun$inner_mode$Depth[3] +
-              cov.pred*PLSrun$inner_mode$Depth[4] + BM.pred*PLSrun$inner_mode$Depth[5] + Rich.pred*PLSrun$inner_mode$Depth[6]
-  C.pred   <- PLSrun$inner_mode$C[1] + Scores[,1]*PLSrun$inner_mode$C[2] + Scores[,2]*PLSrun$inner_mode$C[3] +
-    Scores[,3]*PLSrun$inner_mode$C[4] + Scores[,4]*PLSrun$inner_mode$C[5] + Scores[,5]*PLSrun$inner_mode$C[6] +
-    Scores[,6]*PLSrun$inner_mode$C[7]
-  
-  PRED <- nnorm(C.pred, train$Carbono_Subterraneo_kg_m2)
-  
-  # store the model accuracies
-  OBS <- nnorm(Scores[,7], train$Carbono_Subterraneo_kg_m2)
-  under.site[[i]] <- train$Uso
-  under.obs[[i]] <- OBS
-  under.pred[[i]] <- PRED
-  under.r2[[i]]<-(cor(PRED, OBS, method="pearson"))^2
-  s1<-sqrt(mean((OBS-PRED)^2))
-  under.rmse[[i]]<-s1
-  under.Nrmse[[i]]<-(s1/(max(OBS)-min(OBS)))*100
-  lm = lm(PRED ~ OBS-1)
-  under.bias[[i]] <-1-coef(lm)  
-}
-
-summary(unlist(under.r2))
-summary(unlist(under.Nrmse))
-summary(unlist(under.bias))
-
-under.pred.data <- data.frame(site=unlist(under.site), pred=unlist(under.pred), obs=unlist(under.obs))
-
-plot(pred~obs, data=under.pred.data)
-abline(0,1)
-
-save.image("peatland.RData")
 
 ###################################################
 ### Fits PLSR directly using the RS information ###
