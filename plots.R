@@ -1,90 +1,6 @@
 
 
 
-#################
-### Figure 3 ####
-#################
-
-# Effects on aerial Carbon Stock
-# selecting effects ('active' rows)
-good_rows_C = c(5,9,12,14,15)
-# 'active' effects in matrix format
-path_effs_C = as.matrix(PLS$effects[good_rows_C, 2:4])
-# add rownames to path_effs
-rownames(path_effs_C) = colnames(above.inner)[1:(length(above.inner[,1])-1)]
-# Effects on soil Carbon Stock 
-good_rows_C2 = c(6, 11, 15, 18, 20, 21)
-path_effs_C2 = as.matrix(PLS2$effects[good_rows_C2, 2:4])
-rownames(path_effs_C2) = c("H","FC","Cov","Rich","BM","Depth")
-
-# setting margin size
-# plot infuences 
-pdf(file = "Figures/3. effects.pdf", width=10, height=5)
-mat = layout(matrix(c(1,2), nrow = 1, ncol = 2, byrow = TRUE), widths=c(1,1.1))
-#layout.show(mat)
-# barplots of total effects (direct + indirect)
-# aboveground C
-par(mar = c(3, 4.3, 1, 0.6))
-barplot(t(abs(path_effs_C)), beside=T, border = NA, col = c("mediumpurple4", "mediumpurple2", "lavender"), cex.lab=1.3,
-        las = 1, cex.names = 1.3, cex.axis = 1.3, ylab="Relative importance", ylim=c(0,1.1),
-        args.legend = list(x = "topleft", ncol = 2, border = NA, bty = "n", title = "", cex=1.5))
-mtext("(a)", side=3, line=-0.3, adj=0, cex=1.5, font=2)
-text(x=c(3.5, 15.5), y=c(0.56, 1.07), "*", cex=3)
-# underground C
-barplot(t(abs(path_effs_C2)), beside=T, border = NA, col = c("mediumpurple4", "mediumpurple2", "lavender"), ylab="Relative importance",
-        las = 1, cex.names = 1.3, cex.axis = 1.3,legend = c("Direct", "Indirect", "Total"), cex.lab=1.3,ylim=c(0,1.1),
-        args.legend = list(x = "topleft", ncol = 1, border = NA, bty = "n", title = "", cex=1.5))
-mtext("(b)", side=3, line=-0.3, adj=0, cex=1.5, font=2)
-text(x=c(23.5), y=c(0.95), "*", cex=3)
-dev.off()
-
-################
-### Figure 4 ###
-################
-
-### PLS-PM LVs interactions
-
-plot_r <- function(x1, y1, x2, y2, var1, var2){ 
-  r1 = round( cor(var1, cons$C, method = "spearman"), 2)
-  r2 = round( cor(var2, manag$C, method = "spearman"), 2)
-  text(x=x1, y=y1, bquote("r"["con"]~"="~ .(r1)), adj=c(0,1), cex=1.2)
-  text(x=x2, y=y2, bquote("r"["man"]~"="~ .(r2)), adj=c(0,1), cex=1.2)
-}
-
-#pdf(file = "Figures/LV_effects.pdf", width=12, height=3)
-par(mfrow=c(1,4), mar=c(5, 5, 3, 1))
-scores <- data.frame(site=data$Uso, PLS$scores)
-cons <- scores[scores$site=="Conservacion", ]
-manag <- scores[scores$site=="Productivo", ]
-# colour palette
-palette(c("mediumpurple4", "lavender"))
-# Create pointtype
-Spointtype <- factor(above.scores$site) 
-plot(H ~ FC, data=scores, xlab="Floristic composition", ylab="Vegetation heights", cex.lab=1.4, cex=1.5, cex.axis=1.3,
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(H ~ FC, data=cons),lwd=2); abline(lm(H ~ FC, data=manag),lwd=2, lty=2)
-plot_r(x1=-1.7, y1=2.5, x2=-1.7, y2=2, var1=cons$H, var2=manag$H)
-mtext("(a)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(FC ~ BM, data=scores, xlab="Aboveground C", ylab="Floristic composition", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(FC ~ BM, data=cons),lwd=2); abline(lm(FC ~ BM, data=manag),lwd=2,lty=2)
-plot_r(x1=2.5, y1=-1,x2=2.5, y2=-1.5, var1=cons$FC, var2=manag$FC)
-mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(Rich ~ C, data=scores, xlab="Underground C", ylab="Richness", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(Rich ~ C, data=cons),lwd=2); abline(lm(Rich ~ C, data=manag),lwd=2, lty=2)
-plot_r(x1=2, y1=2,x2=2, y2=1.5, var1=cons$Rich, var2=manag$Rich)
-mtext("(c)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-plot(BM ~ C, data=scores, xlab="Underground C", ylab="Biomass", cex.lab=1.4, cex=1.5, cex.axis=1.3, 
-     pch=21, col="black", bg=as.numeric(Spointtype), las=1, bty="l")
-abline(lm(BM ~ C, data=cons),lwd=2); abline(lm(BM ~ C, data=manag),lwd=2, lty=2)
-plot_r(x1=-0.5, y1=4.1,x2=-0.5, y2=3.5, var1=cons$BM, var2=manag$BM)
-mtext("(d)", side=3, line=0.5, adj=0, cex=1.1, font=2)
-legend("topright", legend = c("Conservation", "Management"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n") 
-dev.off()
-
-
-
 ################
 ### Figure 5 ###
 ################
@@ -164,6 +80,7 @@ dev.off()
 
 library(GISTools)
 library(rgdal)
+library(raster)
 
 # load sites limit
 limit <- readOGR("D:/out_P1","separacion_areas")
@@ -183,7 +100,7 @@ plot(med.BM, col=color(40), zlim=c(0,3), legend.shrink=1, legend.width=2, legend
      legend.args=list(text=expression("kg m"^-2), side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100, units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 # Richness
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
@@ -192,7 +109,7 @@ plot(med.Rich3, col=color(40), zlim=c(5,20), legend.shrink=1, legend.width=2, ce
      legend.args=list(text="N° spp", side=4, line=2.5, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1,subdiv=0.1, scol = "black", sfcol =c("black"))
 # Soil depth
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
@@ -201,7 +118,7 @@ plot(med.Soil, col=color(40), zlim=c(15,80), legend.shrink=1, legend.width=2, ce
      legend.args=list(text="cm", side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 # C stock
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
@@ -210,7 +127,7 @@ plot(med.C, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, legend
      legend.args=list(text=expression("kg m"^-2), side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
 dev.off()
 
 ################
@@ -231,28 +148,28 @@ plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Aboveground biom
 plot(coeffvar.BM, col=color(40), zlim=c(20,40), legend.shrink=1, legend.width=2, legend.mar=8, add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
 # Richness
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
 plot(coeffvar.Rich, col=color(40), zlim=c(5,10),legend.shrink=1, legend.width=2,  legend.mar=8, add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
 # Soil depth
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
 plot(coeffvar.Soil2, col=color(40), zlim=c(0,50),legend.shrink=1, legend.width=2, legend.mar=8, add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
 # C stock
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
 plot(coeffvar.C2, col=color(40),  zlim=c(0,50), legend.shrink=1, legend.width=2, legend.mar=8, add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 dev.off()
 
 ################
@@ -271,22 +188,22 @@ par(mfrow=c(2,2), mar=c(0.3, 0.5, 2, 4))
 niceplot(BM_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 # Richness
 niceplot(Rich_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 # Soil depth
 niceplot(Depth_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 # C tock
 niceplot(C_RGB, r=1, g=2, b=3, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
-GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, scol = "black", sfcol =c("black"))
+GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
 dev.off()
 
 ### plot legend: color wheel
@@ -336,34 +253,6 @@ g <- gtable_add_grob(g1, g2$grobs[[which(g2$layout$name == "panel")]], pp$t, pp$
 # draw the two graph together
 pdf(file = "Figures/Leyend_colorWheel.pdf", width=10, height=10)
 grid.draw(g)
-dev.off()
-
-#################################
-### Differences between sites ###
-#################################
-
-# path coefficients between conservation and management areas
-#pdf(file = "Figures/site_effects.pdf", width=10, height=4)
-m=layout(mat = rbind(c(1,2)), widths = c(1,1.35))
-#layout.show(m)
-par(mar=c(5, 4, 3, 0.2))
-# aboveground model
-barplot(t(as.matrix(above_boot$test[,2:3])), border = NA, beside = TRUE, ylab="Path coefficient",
-        col = c("mediumpurple4", "lavender"), las = 2, ylim = c(-1, 1.2),
-        cex.names = 0.8, col.axis = "gray30", cex.axis = 0.8)
-abline(h = 0, col = "gray50")
-legend("bottomleft", legend = c("Conservation", "Management"), pt.bg = c("mediumpurple4", "lavender"),
-       ncol = 1, pch = 22, col = c("mediumpurple4", "lavender"), bty = "n",
-       text.col = "gray40")
-mtext("(a)", side=3, line=0.5, adj=0, cex=1.5)
-text(x=c(5,17,20,27,32,35), y=c(0.93,1.1,0.1,1.05,0.35,0.45), "*", cex=2)
-# underground model
-barplot(t(as.matrix(under_boot$test[,2:3])), border = NA, beside = TRUE, ylab="Path coefficient",
-        col = c("mediumpurple4", "lavender"), las = 2, ylim = c(-1.3, 1.1),
-        cex.names = 0.8, col.axis = "gray30", cex.axis = 0.8)
-abline(h = 0, col = "gray50")
-mtext("(b)", side=3, line=0.5, adj=0, cex=1.5)
-text(x=c(2,5,20,32,35,41), y=c(0.5,0.9,1,1.05,0.55,0.75), "*", cex=2)
 dev.off()
 
 
