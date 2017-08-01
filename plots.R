@@ -6,7 +6,7 @@
 ################
 
 # Scatterplots
-#pdf(file = "Figures/scatterPlot.pdf", width=8, height=8)
+#pdf(file = "Figures/scatterPlot.pdf", width=9, height=8)
 par(mfrow=c(2,2))
 ## Biomass
 par(mar=c(5, 5, 3, 3))
@@ -68,6 +68,38 @@ bias =round(median( unlist(C.bias) ),2)
 pusr = par()$usr
 mtext( bquote(paste(bold("(d)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
        side=3, line=0.5, adj=0.4, cex=1.1, font=2)
+dev.off()
+
+##########################
+### results using PLSR ###
+##########################
+
+pdf(file = "Figures/scatterPLSR.pdf", width=10, height=4.8)
+par(mfrow=c(1,2))
+par(mar=c(5, 5, 3, 2))
+Predicted = unlist(xpred)
+Observed = unlist(xobs)
+MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
+MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
+plot(Observed,Predicted,xlim=c(0,30), ylim=c(0,30), col=rgb(0,0,0,50,maxColorValue=255),bty="l",
+     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex.lab=1.4, cex=1.5, cex.axis=1.3, xaxs="i", yaxs="i", las= 1)
+abline(0, 1, lwd=2)
+R2 <- round( (cor(Predicted, Observed, method="pearson"))^2, 2 )
+RMSE <- sqrt(mean((Observed-Predicted)^2))
+NRMSE <- round( (RMSE/(max(Observed)-min(Observed)))*100, 2 )
+lm1 = lm(Predicted ~ Observed-1)
+abline(lm1, lty=2, lwd=2)
+bias <-round( 1-coef(lm1), 2 )
+legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(1,2), cex=1.5, bty = "n")
+mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(R2), ",", " %RMSE" ==. (NRMSE), ",", " bias" == .(bias)) ), 
+       side=3, line=0.5, adj=0.4, cex=1.1, font=2)
+### coefficients
+plot( c(wl,920), coeff, ylim=c(min(coeff), max(coeff)), type="h", xlab=expression(lambda(nm)), 
+      ylab="Coefficient", las=1, bty="l", cex.lab=1.4, cex=1.5, cex.axis=1.3, lwd=2, xaxt="n" )
+axis(1, cex.axis=1.3, at=c(seq(500,800,100), 920), labels=c(seq(500,800,100), "H"))
+abline(0,0, lwd=2)
+abline(v=900, col="gray", lwd=4)
+mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 dev.off()
 
 
@@ -292,6 +324,7 @@ points(fig, "sites", pch=16, cex=data$Carbono_total*0.18 , col=rgb(0,0,0,60,maxC
 plot(fit2, col="red", lty=2, cex=1.5)
 mtext("(b)", side=3, line=0.5, adj=0, cex=2)
 #dev.off()
+
 ## scaterplots
 # species
 Predicted = pred_m1
@@ -333,72 +366,4 @@ txt = paste(txt1, txt3, txt4, sep="\n")
 pusr = par()$usr
 text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
 mtext("(d)", side=3, line=0.5, adj=0, cex=2)
-dev.off()
-
-##########################
-### results using PLSR ###
-##########################
-
-#pdf(file = "Figures/scatterPLSR.pdf", width=13, height=6)
-par(mfrow=c(1,2))
-## aerial C
-par(mar=c(5, 5, 3, 3))
-Predicted = unlist(xpred1)
-Observed = unlist(xobs1)
-MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
-MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-plot(Observed,Predicted,xlim=c(0,4), ylim=c(0,4), col=rgb(0,0,0,50,maxColorValue=255),bty="l",
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xaxs="i", yaxs="i",
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=3, lwd=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
-abline(lm1, lty=2, lwd=2)
-bias <-1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
-pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(3,2), cex=1.5, bty = "n")
-mtext("(a)", side=3, line=0.5, adj=0, cex=2)
-## underground C
-par(mar=c(5, 5, 3, 3))
-Predicted = unlist(xpred2)
-Observed = unlist(xobs2)
-plot(Observed,Predicted, col=rgb(0,0,0,50,maxColorValue=255), bty="l", xaxs="i", yaxs="i",
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex=2, cex.lab=1.5, xlim=c(0,25),ylim=c(0,25),
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=3, lwd=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
-abline(lm1, lty=2, lwd=2)
-bias <- 1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
-pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-mtext("(b)", side=3, line=0.5, adj=0, cex=2)
-dev.off()
-
-
-### coefficients
-#pdf(file = "Figures/PLSRCoeff.pdf", width=12, height=5)
-par(mfrow=c(1,2))
-par(mar=c(5, 5, 3, 3))
-plot( c(wl,920), coeff1, ylim=c(min(coeff1), max(coeff1)), type="h", xlab=expression(lambda(nm)), 
-      ylab="Coefficient", las=1, bty="l", cex=2, cex.lab=1.5 )
-abline(0,0, lty=2)
-#
-par(mar=c(5, 5, 3, 3))
-plot( c(wl,920), coeff2, ylim=c(min(coeff2), max(coeff2)), type="h", xlab=expression(lambda(nm)), 
-      ylab="Coefficient", las=1, bty="l", cex=2, cex.lab=1.5)
-abline(0,0, lty=2)
 dev.off()

@@ -391,27 +391,21 @@ prepro <- function (X) # brightness normalization
  X
 }
 
-data2 <- data.frame( C=data$Carbono_Aereo_total_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
-data3 <- data.frame( C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
+data2 <- data.frame( C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
 
 ## bootstrap
 
 # set the bootstrap parameters
-N = nrow(data) # N° of observations
+N = nrow(data2) # N° of observations
 B = 100        # N° of bootstrap iterations
 
-xobs1 <- list()
-xobs2 <- list()
-xpred1 <- list()
-xpred2 <- list()
-xcoef1 <- list()
-xcoef2 <- list()
-xr21 <- list()
-xr22 <- list()
-xNrmse1 <- list()
-xNrmse2 <- list()
-xbias1 <- list()
-xbias2 <- list()
+xobs <- list()
+xpred <- list()
+xcoef <- list()
+xr2 <- list()
+xNrmse <- list()
+xbias <- list()
+ncomp <- list()
 
 for (i in 1:B) { 
   
@@ -419,48 +413,35 @@ for (i in 1:B) {
   idx = sample(1:N, N, replace=TRUE)
   
   # select subsets of the five groups based on the random numbers
-  train1 <- data2[idx,]
-  train2 <- data3[idx,]
+  train <- data2[idx,]
+  val <- data2[-idx,]
   
   # observed 
-  obs_1 <- train1$C
-  obs_2 <- train2$C
-  
-  # aboveground C stock
-  fit1 <- autopls(C~., data=train1)
-  pred_1 <- predicted(fit1)  
+  obs <- train$C
   
   # underground C stock
-  fit2 <- autopls(C~., data=train2)
-  pred_2 <- predicted(fit2) 
+  fit <- autopls(C~., data=train)
+  pred <- predicted(fit) 
 
   # store values
-  xobs1[[i]] <- obs_1
-  xobs2[[i]] <- obs_2
-  xpred1[[i]] <- pred_1
-  xpred2[[i]] <- pred_2
-  xcoef1[[i]] <- coef(fit1)
-  xcoef2[[i]] <- coef(fit2)
-  xr21[[i]]<-(cor(pred_1, obs_1, method="pearson"))^2
-  xr22[[i]]<-(cor(pred_2, obs_2, method="pearson"))^2
-  s1<-sqrt(mean((obs_1-pred_1)^2))
-  s2<-sqrt(mean((obs_2-pred_2)^2))
-  xNrmse1[[i]]<-(s1/(max(obs_1)-min(obs_1)))*100
-  xNrmse2[[i]]<-(s2/(max(obs_2)-min(obs_2)))*100
-  lm1 = lm(pred_1 ~ obs_1-1)
-  lm2 = lm(pred_2 ~ obs_2-1)
-  xbias1[[i]] <-1-coef(lm1)
-  xbias1[[i]] <-1-coef(lm1)
-  
+  xobs[[i]] <- obs
+  xpred[[i]] <- pred
+  xcoef[[i]] <- coef(fit)
+  xr2[[i]]<-(cor(pred, obs, method="pearson"))^2
+  s1<-sqrt(mean((obs-pred)^2))
+  xNrmse[[i]]<-(s1/(max(obs)-min(obs)))*100
+  lm1 = lm(pred ~ obs_1-1)
+  xbias[[i]] <-1-coef(lm1)
+  ncomp[[i]] <- summary(fit)$lv
+
 }
 
-summary( unlist(xr21) )
-summary( unlist(xNrmse1) )
-summary( unlist(xr22) )
-summary( unlist(xNrmse2) )
+summary( unlist(xr2) )
+summary( unlist(xNrmse) )
+summary( unlist(xbias) )
+summary( unlist(ncomp) )
 
-coeff1 <- apply( do.call("rbind", xcoef1), 2, FUN = median )
-coeff2 <- apply( do.call("rbind", xcoef2), 2, FUN = median )
+coeff <- apply( do.call("rbind", xcoef), 2, FUN = median )
 
 save.image("peatland.RData")
 
