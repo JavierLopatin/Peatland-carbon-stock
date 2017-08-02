@@ -114,8 +114,8 @@ polygon(c(wl, rev(wl)), c(quant[5,], rev(quant[1,])), col = rgb(0, 0, 0,0.1))
 lines(wl, quant[2,], type="l", lty=2)
 lines(wl, quant[3,], type="l")
 lines(wl, quant[4,], type="l", lty=2)
-axis(4, cex.axis=1.3, las=2, pos=930)
-mtext("Reflectance", side=4, cex=1.3, line=3.5)
+axis(4, cex.axis=1.3, las=2, pos=940)
+mtext("Reflectance", side=4, cex=1.3, line=4)
 dev.off()
 
 
