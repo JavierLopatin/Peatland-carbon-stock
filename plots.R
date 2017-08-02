@@ -14,7 +14,7 @@ MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
 MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
 palette(c("mediumpurple4", "lavender"))
 Spointtype <- factor(pred.data$site) 
-plot(pred.BM ~ obs.BM, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,6), ylim=c(0,6), #main="Aboveground biomass",
+plot(pred.BM ~ obs.BM, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,6), ylim=c(0,6), 
      cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.BM ~ obs.BM-1, data=pred.data)
@@ -81,8 +81,10 @@ Predicted = unlist(xpred)
 Observed = unlist(xobs)
 MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
 MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-plot(Observed,Predicted,xlim=c(0,30), ylim=c(0,30), col=rgb(0,0,0,50,maxColorValue=255),bty="l",
-     xlab = MyXlab, ylab = MyYlab, pch=16, pty="s", cex.lab=1.4, cex=1.5, cex.axis=1.3, xaxs="i", yaxs="i", las= 1)
+palette(c("mediumpurple4", "lavender"))
+Spointtype <- factor(unlist(site)) 
+plot(pred ~ obs, data=pred.PLSR, bg=as.numeric(Spointtype), xlim=c(0,30), ylim=c(0,30), 
+     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
 abline(0, 1, lwd=2)
 R2 <- round( (cor(Predicted, Observed, method="pearson"))^2, 2 )
 RMSE <- sqrt(mean((Observed-Predicted)^2))
@@ -91,6 +93,7 @@ lm1 = lm(Predicted ~ Observed-1)
 abline(lm1, lty=2, lwd=2)
 bias <-round( 1-coef(lm1), 2 )
 legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(1,2), cex=1.5, bty = "n")
+legend("topleft", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n")
 mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(R2), ",", " %RMSE" ==. (NRMSE), ",", " bias" == .(bias)) ), 
        side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 ### coefficients

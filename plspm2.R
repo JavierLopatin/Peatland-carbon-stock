@@ -391,7 +391,7 @@ prepro <- function (X) # brightness normalization
  X
 }
 
-data2 <- data.frame( C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
+data2 <- data.frame(site=data$Uso, C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
 
 ## bootstrap
 
@@ -406,6 +406,7 @@ xr2 <- list()
 xNrmse <- list()
 xbias <- list()
 ncomp <- list()
+xsite <- list()
 
 for (i in 1:B) { 
   
@@ -414,13 +415,12 @@ for (i in 1:B) {
   
   # select subsets of the five groups based on the random numbers
   train <- data2[idx,]
-  val <- data2[-idx,]
   
   # observed 
   obs <- train$C
   
   # underground C stock
-  fit <- autopls(C~., data=train)
+  fit <- autopls(C~., data=train[, 2:length(train)])
   pred <- predicted(fit) 
 
   # store values
@@ -433,7 +433,7 @@ for (i in 1:B) {
   lm1 = lm(pred ~ obs_1-1)
   xbias[[i]] <-1-coef(lm1)
   ncomp[[i]] <- summary(fit)$lv
-
+  xsite[[i]] <- train$site
 }
 
 summary( unlist(xr2) )
@@ -442,6 +442,8 @@ summary( unlist(xbias) )
 summary( unlist(ncomp) )
 
 coeff <- apply( do.call("rbind", xcoef), 2, FUN = median )
+
+pred.PLSR <- data.frame(obs=unlist(xobs), pred=unlist(xpred), site=unlist(xsite))
 
 save.image("peatland.RData")
 
