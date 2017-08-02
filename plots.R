@@ -75,7 +75,7 @@ dev.off()
 ##########################
 
 pdf(file = "Figures/scatterPLSR.pdf", width=10, height=4.8)
-par(mfrow=c(1,2))
+mat <- layout(rbind(c(1,2),c(1,2)), widths=c(1,1.1), TRUE) 
 par(mar=c(5, 5, 3, 2))
 Predicted = unlist(xpred)
 Observed = unlist(xobs)
@@ -97,12 +97,25 @@ legend("topleft", legend = c("Conservation", "Productive"), pch=21, col="black",
 mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(R2), ",", " %RMSE" ==. (NRMSE), ",", " bias" == .(bias)) ), 
        side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 ### coefficients
+par(mar=c(5, 5, 3, 4))
 plot( c(wl,920), coeff, ylim=c(min(coeff), max(coeff)), type="h", xlab=expression(lambda(nm)), 
       ylab="Coefficient", las=1, bty="l", cex.lab=1.4, cex=1.5, cex.axis=1.3, lwd=2, xaxt="n" )
 axis(1, cex.axis=1.3, at=c(seq(500,800,100), 920), labels=c(seq(500,800,100), "H"))
 abline(0,0, lwd=2)
-abline(v=900, col="gray", lwd=4)
+abline(v=900, lty=2, lwd=4)
 mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
+# obtain the quantiles of the spectras
+spectra = hyperData[,2:ncol(hyperData)]/1000
+quant <- apply(spectra, 2, quantile, probs =c(0.05, 0.25, 0.5, 0.75, 0.95))
+par(new=T, mar=c(5, 5, 3, 5.65))
+plot(wl, quant[1,], bty="l", type="l", ylim = c(0, max(spectra)), xlim = c(min(wl)-10, max(wl)+10), 
+     las=1, xlab="", ylab="",cex.lab = 1.3, yaxs = "i", axes=F)
+polygon(c(wl, rev(wl)), c(quant[5,], rev(quant[1,])), col = rgb(0, 0, 0,0.1))
+lines(wl, quant[2,], type="l", lty=2)
+lines(wl, quant[3,], type="l")
+lines(wl, quant[4,], type="l", lty=2)
+axis(4, cex.axis=1.3, las=2, pos=930)
+mtext("Reflectance", side=4, cex=1.3, line=3.5)
 dev.off()
 
 
