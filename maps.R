@@ -151,37 +151,9 @@ coeffvar.Soil <- calc( stack(unlist(Soil.maps)), fun = cv )
 coeffvar.C <- calc( stack(unlist(C.maps)), fun = cv )
 plot(coeffvar.Cov)
 
+# all 
+RGB.maps <- stack(scales_DCM, scales_FC, med.Cov, med.BM, med.Rich, med.Soil)
+names(RGB.maps) <- c("H", "FC", "Cov", "BM", "Rich", "Soil")
+
 save.image("peatland.RData")
-
-
-##############################################################
-## influences map
-
-# Biomass
-BM_H <- scales_DCM * 0.61
-BM_FC <- scales_FC * 0.15
-BM_Cov <- med.Cov * 0.03
-BM_RGB <- stack(BM_H, BM_FC, BM_Cov)
-# Richness
-Rich_H <- scales_DCM * 0.22
-Rich_FC <- scales_FC * 0.73
-Rich_Cov <- med.Cov * 0.11
-Rich_RGB <- stack(Rich_H, Rich_FC, Rich_Cov)
-# depth
-Depth_BM <- med.BM * 0.43
-Depth_Rich <- med.Rich * 0.65
-Depth_Cov <- med.Cov * 0.33
-Depth_RGB <- stack(Depth_BM, Depth_Rich, Depth_Cov)
-# depth
-Depth_BM <- med.BM * 0.43
-Depth_Rich <- med.Rich2 * 0.65
-Depth_Cov <- med.Cov * 0.33
-Depth_RGB <- stack(Depth_BM, Depth_Rich, Depth_Cov)
-# C
-C_FC <- scales_FC * 0.31
-C_Rich <- med.Rich * 0.61
-C_Depth <- med.soil * 0.9
-C_RGB <- stack(C_Depth, C_Rich, C_FC)
-
-
 

@@ -100,7 +100,7 @@ mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(R2), ",", " %RMSE" ==. (NRMSE), 
 par(mar=c(5, 5, 3, 4))
 plot( c(wl,920), coeff, ylim=c(min(coeff), max(coeff)), type="h", xlab=expression(lambda(nm)), 
       ylab="Coefficient", las=1, bty="l", cex.lab=1.4, cex=1.5, cex.axis=1.3, lwd=2, xaxt="n" )
-axis(1, cex.axis=1.3, at=c(seq(500,800,100), 920), labels=c(seq(500,800,100), "H"))
+axis(1, cex.axis=1.3, at=c(seq(500,800,100), 920), labels=c(seq(500,800,100), "Veg.height"))
 abline(0,0, lwd=2)
 abline(v=900, lty=2, lwd=4)
 mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
@@ -108,10 +108,9 @@ mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 spectra = hyperData[,2:ncol(hyperData)]/1000
 quant <- apply(spectra, 2, quantile, probs =c(0.05, 0.25, 0.5, 0.75, 0.95))
 par(new=T, mar=c(5, 5, 3, 5.65))
-plot(wl, quant[1,], bty="l", type="l", ylim = c(0, max(spectra)), xlim = c(min(wl)-10, max(wl)+10), 
+plot(wl, quant[2,], lty=2, bty="l", type="l", ylim = c(0, max(spectra)), xlim = c(min(wl)-10, max(wl)+10), 
      las=1, xlab="", ylab="",cex.lab = 1.3, yaxs = "i", axes=F)
-polygon(c(wl, rev(wl)), c(quant[5,], rev(quant[1,])), col = rgb(0, 0, 0,0.1))
-lines(wl, quant[2,], type="l", lty=2)
+polygon(c(wl, rev(wl)), c(quant[5,], rev(quant[1,])), col = rgb(0, 0, 0,0.1), border = rgb(0, 0, 0,0.1))
 lines(wl, quant[3,], type="l")
 lines(wl, quant[4,], type="l", lty=2)
 axis(4, cex.axis=1.3, las=2, pos=940)
@@ -121,7 +120,7 @@ dev.off()
 
 
 ################
-### Figure 6 ###
+### Figure 8 ###
 ################
 
 # Prediction maps
@@ -138,7 +137,7 @@ color <- colorRampPalette(c("blue", "cornflowerblue", "lightblue", "yellow", "da
 color2<- colorRampPalette(c("gray100", "gray50", "gray10"))
 
 # Plot
-#pdf(file = "Figures/7.pred_maps.pdf", width=10, height=8)
+pdf(file = "Figures/8.pred_maps.pdf", width=8, height=7)
 par(mfrow=c(2,2))
 # Biomass
 par(mar=c(0.3, 0.3, 1.8, 4))
@@ -149,6 +148,7 @@ plot(med.BM, col=color(40), zlim=c(0,3), legend.shrink=1, legend.width=2, legend
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100, units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
+mtext("(a)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # Richness
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
@@ -158,6 +158,7 @@ plot(med.Rich3, col=color(40), zlim=c(5,20), legend.shrink=1, legend.width=2, ce
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1,subdiv=0.1, scol = "black", sfcol =c("black"))
+mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # Soil depth
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
@@ -167,19 +168,21 @@ plot(med.Soil, col=color(40), zlim=c(15,80), legend.shrink=1, legend.width=2, ce
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
+mtext("(c)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # C stock
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Belowground C stock", axes=F)
 plot(med.C, col=color(40), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
      legend.args=list(text=expression("kg m"^-2), side=4, line=2.3, cex=1), add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
+mtext("(d)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 dev.off()
 
 ################
-### Figure X ###
+### Figure 9 ###
 ################
 
 # Coefficient of variation maps
@@ -188,7 +191,7 @@ library(GISTools)
 library(rgdal)
 
 # Plot
-#pdf(file = "Figures/8.CV_maps.pdf", width=10, height=8)
+pdf(file = "Figures/9.CV_maps.pdf", width=8, height=7)
 par(mfrow=c(2,2))
 # Biomass
 par(mar=c(0.3, 0.3, 1.8, 4))
@@ -197,6 +200,7 @@ plot(coeffvar.BM, col=color(40), zlim=c(20,40), legend.shrink=1, legend.width=2,
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
+mtext("(a)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # Richness
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
@@ -204,6 +208,7 @@ plot(coeffvar.Rich, col=color(40), zlim=c(5,10),legend.shrink=1, legend.width=2,
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
+mtext("(b)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # Soil depth
 par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="SOM accumulation depth", axes=F)
@@ -211,18 +216,20 @@ plot(coeffvar.Soil2, col=color(40), zlim=c(0,50),legend.shrink=1, legend.width=2
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1,scol = "black", sfcol =c("black"))
+mtext("(c)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 # C stock
 par(mar=c(0.3, 0.3, 1.8, 4))
-plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Underground C stock", axes=F)
+plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Belowground C stock", axes=F)
 plot(coeffvar.C2, col=color(40),  zlim=c(0,50), legend.shrink=1, legend.width=2, legend.mar=8, add=T)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
+mtext("(d)", side=3, line=0.5, adj=0, cex=1.1, font=2)
 dev.off()
 
-################
-### Figure 8 ###
-################
+#################
+### Figure 10 ###
+#################
 
 # map of influences
 library(GISTools)
@@ -232,23 +239,23 @@ library(KITools)
 # RGB map
 pdf(file = "Figures/effect_maps.pdf", width=10, height=8)
 par(mfrow=c(2,2), mar=c(0.3, 0.5, 2, 4))
-# Biomass
-niceplot(BM_RGB, r=1, g=2, b=3, stretch = 20)
+# BM, FC, Rich
+niceplot(RGB.maps, r=4, g=2, b=5, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
-# Richness
-niceplot(Rich_RGB, r=1, g=2, b=3, stretch = 20)
+# Rich, Cov, Soil
+niceplot(RGB.maps, r=5, g=3, b=6, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
-# Soil depth
-niceplot(Depth_RGB, r=1, g=2, b=3, stretch = 20)
+# BM, Rich, Soil
+niceplot(RGB.maps, r=4, g=5, b=6, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
-# C tock
-niceplot(C_RGB, r=1, g=2, b=3, stretch = 20)
+# Cov, FC, Rich
+niceplot(RGB.maps, r=2, g=3, b=5, stretch = 20)
 plot(limit, lwd=3, lty=2, add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1, subdiv=0.1, scol = "black", sfcol =c("black"))
