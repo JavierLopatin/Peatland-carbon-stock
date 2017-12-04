@@ -6,16 +6,17 @@
 ################
 
 # Scatterplots
-#pdf(file = "Figures/scatterPlot.pdf", width=9, height=8)
+pdf(file = "Figures/scatterPlot.pdf", width=8, height=8)
 par(mfrow=c(2,2))
 ## Biomass
 par(mar=c(5, 5, 3, 3))
 MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
 MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-palette(c("mediumpurple4", "lavender"))
+palette(c(alpha("mediumpurple4", 0.2), alpha("palegreen3", 0.2)))
 Spointtype <- factor(pred.data$site) 
+
 plot(pred.BM ~ obs.BM, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,6), ylim=c(0,6), 
-     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
+     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col=NA, las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.BM ~ obs.BM-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -23,14 +24,14 @@ r2 = round(median( unlist(BM.r2) ),2)
 nRMSE = round(median( unlist(BM.Nrmse) ),2)
 bias =round(median( unlist(BM.bias) ),2)
 pusr = par()$usr
-legend("bottomright", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n")
+legend("bottomright", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "palegreen3"),cex=1.2, pt.cex=1.5, bty="n")
 mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), ",", " bias" == .(bias)) ), 
        side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 
 ## Richness
 par(mar=c(5, 5, 3, 3))
 plot(pred.Rich ~ obs.Rich, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,18), ylim=c(0,18),#main="Species richness", 
-     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab="Observed (N° spp)", ylab="Predicted (N° spp)")
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab="Observed (N° spp)", ylab="Predicted (N° spp)")
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.Rich ~ obs.Rich-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -45,7 +46,7 @@ legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(1,2)
 ## Soil depth
 par(mar=c(5, 5, 3, 3))
 plot(pred.soil ~ obs.soil, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,88), ylim=c(0,88),# main="Soil depth",
-     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab="Observed (cm)", ylab="Predicted (cm)")
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, col=NA, pch=21, las=1, bty="l", xlab="Observed (cm)", ylab="Predicted (cm)")
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.soil ~ obs.soil-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -58,7 +59,7 @@ mtext( bquote(paste(bold("(c)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), 
 ## C stock
 par(mar=c(5, 5, 3, 3))
 plot(pred.C ~ obs.C, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,45), ylim=c(0,45),# main="Underground C stock",
-     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.C ~ obs.C-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -74,17 +75,17 @@ dev.off()
 ### results using PLSR ###
 ##########################
 
-pdf(file = "Figures/scatterPLSR.pdf", width=10, height=4.8)
+#pdf(file = "Figures/scatterPLSR.pdf", width=10, height=4.8)
 mat <- layout(rbind(c(1,2),c(1,2)), widths=c(1,1.1), TRUE) 
 par(mar=c(5, 5, 3, 2))
 Predicted = unlist(xpred)
 Observed = unlist(xobs)
 MyXlab <- bquote( "Observed (" ~ kg~~m^-1 ~ ")" )
 MyYlab <- bquote( "Predicted (" ~ kg~~m^-1 ~ ")" )
-palette(c("mediumpurple4", "lavender"))
+palette(c(alpha("mediumpurple4", 0.2), alpha("palegreen3", 0.2)))
 Spointtype <- factor(unlist(site)) 
 plot(pred ~ obs, data=pred.PLSR, bg=as.numeric(Spointtype), xlim=c(0,30), ylim=c(0,30), 
-     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col="black", las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
+     cex.lab=1.4, cex=1.5, cex.axis=1.3,  pch=21, col=NA, las=1, bty="l", xlab=MyXlab, ylab=MyYlab)
 abline(0, 1, lwd=2)
 R2 <- round( (cor(Predicted, Observed, method="pearson"))^2, 2 )
 RMSE <- sqrt(mean((Observed-Predicted)^2))
@@ -93,7 +94,7 @@ lm1 = lm(Predicted ~ Observed-1)
 abline(lm1, lty=2, lwd=2)
 bias <-round( 1-coef(lm1), 2 )
 legend("bottomright", legend = c("1:1 line", "fit line"), lwd=c(2,2), lty=c(1,2), cex=1.5, bty = "n")
-legend("topleft", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "lavender"),cex=1.2, pt.cex=1.5, bty="n")
+legend("topleft", legend = c("Conservation", "Productive"), pch=21, col="black", pt.bg=c("mediumpurple4", "palegreen3"),cex=1.2, pt.cex=1.5, bty="n")
 mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(R2), ",", " %RMSE" ==. (NRMSE), ",", " bias" == .(bias)) ), 
        side=3, line=0.5, adj=0.4, cex=1.1, font=2)
 ### coefficients
@@ -116,7 +117,6 @@ lines(wl, quant[4,], type="l", lty=2)
 axis(4, cex.axis=1.3, las=2, pos=940)
 mtext("Reflectance", side=4, cex=1.3, line=4)
 dev.off()
-
 
 
 ################
