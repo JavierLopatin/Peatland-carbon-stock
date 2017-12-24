@@ -1,13 +1,25 @@
 
-### NMDS ordenation
+################################################################################
+## R-Script - 0_Floristic_composition.R                                       ##
+## author: Javier Lopatin                                                     ##
+## mail: javierlopatin@gmail.com                                              ##  
+##                                                                            ##
+## Manuscript: Combining ecological knowledge and remote sensing through      ##
+## structural equation modeling: A case study for peatland carbon assessments ##
+##                                                                            ##
+## description: This R-code provide the floristic coposition ordination axis  ##
+## most of the functions applied in the paper used in Supplementary matherials## 
+##                                                                            ##
+################################################################################
+
 
 library (vegan)
 library (MASS)
 
 ##### set working directory
-setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
+setwd("C:/your/folder/")
 
-# floristic cover data
+# load floristic cover data
 sp <- read.table("data/Cover_spp.csv", header=T, sep=",", dec=".") 
 sp2 <- sp[,2:(ncol(sp)-2)]
 summary(sp2)
@@ -21,7 +33,7 @@ summary(pft2)
 ### Ordination procidure ###
 ############################
 
-##### Apply MDS  #####
+##### Apply NMDS  #####
 
 # To spp level
 # Selecting the number of k (stress value)
@@ -45,7 +57,7 @@ NMDS.sp3  <- scor[, 3]
 NMDS.sp4  <- scor[, 4]
 
 ordination <- data.frame(sp$Plot, NMDS.sp1, NMDS.sp2, NMDS.sp3, NMDS.sp4)
-#write.table(ordination, file = "data/ordination.csv", sep = ",", col.names = T, row.names = F)
+write.table(ordination, file = "data/ordination.csv", sep = ",", col.names = T, row.names = F)
 
 # To PFT level
 # Selecting the number of k (stress value)
@@ -65,6 +77,6 @@ NMDS.PFT2 <- scor[, 2]
 NMDS.PFT3  <- scor[, 3]
 
 PFT <- data.frame(N=pft$Plot, PFT1=NMDS.PFT1, PFT2=NMDS.PFT2, PFT3=NMDS.PFT3)
-#write.table(PFT, file = "data/PFT.csv", sep = ",", col.names = T, row.names = F)
+write.table(PFT, file = "data/PFT.csv", sep = ",", col.names = T, row.names = F)
 
 save.image("ordination.RData")
