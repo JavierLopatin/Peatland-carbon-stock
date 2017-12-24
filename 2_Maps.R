@@ -1,4 +1,15 @@
 
+################################################################################
+## R-Script: 2_Maps.R                                                         ##
+## author: Javier Lopatin                                                     ##
+## mail: javierlopatin@gmail.com                                              ##  
+##                                                                            ##
+## Manuscript: Combining ecological knowledge and remote sensing through      ##
+## structural equation modeling: A case study for peatland carbon assessments ##
+##                                                                            ##
+## description: Create the prediction maps                                    ## 
+##                                                                            ##
+################################################################################
 
 #######################
 ### Ordination maps ###
@@ -42,8 +53,6 @@ hyper[hyper==0]<- NA
 DCM <- stack("D:/out_P1/treesvis/ndsm/DCM_2m.tif")
 names(DCM) <- "H"
 
-lim <- readOGR("D:/out_P1", "area_cut")
-
 DCM2 <- resample(DCM2, hypr, resample='bilinear')
 r <- stack(DCM2, hyper)
 r[r$H > 2] <- NA # height mask
@@ -75,6 +84,8 @@ save.image("peatland.RData")
 ### bootstrapping generation of maps ###
 ########################################
 
+### PLS-PM ###
+
 rescale <- function(x, from, to) { 
   maxx <- maxValue(x)
   minx <- minValue(x)
@@ -84,8 +95,8 @@ rescale <- function(x, from, to) {
 }
 
 # set the bootstrap parameters
-N = nrow(data) # N° of observations
-B = 500        # N° of bootstrap iterations
+N = nrow(data) # NÂ° of observations
+B = 500        # NÂ° of bootstrap iterations
 
 # scaled inputs
 scales_DCM <- nnorm(r[[1]], PLS$scores[,1])
