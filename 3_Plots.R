@@ -1,8 +1,19 @@
 
+################################################################################
+## R-Script: 2_Plots.R                                                        ##
+## author: Javier Lopatin                                                     ##
+## mail: javierlopatin@gmail.com                                              ##  
+##                                                                            ##
+## Manuscript: Combining ecological knowledge and remote sensing through      ##
+## structural equation modeling: A case study for peatland carbon assessments ##
+##                                                                            ##
+## description: Create the paper plots                                        ## 
+##                                                                            ##
+################################################################################
 
 
 ################
-### Figure 5 ###
+### Figure 6 ###
 ################
 
 # Scatterplots
@@ -31,7 +42,7 @@ mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), 
 ## Richness
 par(mar=c(5, 5, 3, 3))
 plot(pred.Rich ~ obs.Rich, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,18), ylim=c(0,18),#main="Species richness", 
-     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab="Observed (N° spp)", ylab="Predicted (N° spp)")
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab="Observed (NÂ° spp)", ylab="Predicted (NÂ° spp)")
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.Rich ~ obs.Rich-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -75,7 +86,7 @@ dev.off()
 ### Figure 7 ###
 ################
 
-#pdf(file = "Figures/7.scatterPLSR.pdf", width=10, height=4.8)
+pdf(file = "Figures/7.scatterPLSR.pdf", width=10, height=4.8)
 mat <- layout(rbind(c(1,2),c(1,2)), widths=c(1,1.1), TRUE) 
 par(mar=c(5, 5, 3, 2))
 Predicted = unlist(xpred)
@@ -137,7 +148,7 @@ color <- colorRampPalette(c("blue", "cornflowerblue", "lightblue", "yellow", "da
 color2<- colorRampPalette(c("gray100", "gray50", "gray10"))
 
 # Plot
-#pdf(file = "Figures/8.pred_maps.pdf", width=8, height=7)
+pdf(file = "Figures/8.pred_maps.pdf", width=8, height=7)
 par(mfrow=c(2,2))
 # Biomass
 par(mar=c(0.3, 0.3, 1.8, 4))
@@ -154,7 +165,7 @@ par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
 plot(med.Rich3, col=color(40), zlim=c(5,20), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="N° spp", side=4, line=2.5, cex=1), add=T)
+     legend.args=list(text="NÂ° spp", side=4, line=2.5, cex=1), add=T)
 plot(limit, lwd=3, lty=2, col="black", add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1,subdiv=0.1, scol = "black", sfcol =c("black"))
@@ -191,7 +202,7 @@ library(GISTools)
 library(rgdal)
 
 # Plot
-#pdf(file = "Figures/9.CV_maps.pdf", width=8, height=7)
+pdf(file = "Figures/9.CV_maps.pdf", width=8, height=7)
 par(mfrow=c(2,2))
 # Biomass
 par(mar=c(0.3, 0.3, 1.8, 4))
@@ -330,7 +341,7 @@ xdat <- data.frame(H=data$Altura_vegetacion_cm, C=data$Carbono_total, Rich=data$
 fit1 <- envfit(nmds1, xdat)
 fit2 <- envfit(nmds2, xdat)
 
-#pdf(file = "Figures/FC2.pdf", width=10, height=10)
+pdf(file = "Figures/FC2.pdf", width=10, height=10)
 par(mfrow=c(2,2))
 # plot species ordination
 #par(mai=c(1,0.5,1,0.5))
