@@ -1,23 +1,27 @@
-## R-Script - PLS Path modeling to predict species richness using LiDAR data 
-## author: Javier Lopatin 
-## mail: javier.lopatin@kit.edu & javierlopatin@gmail.com
-## Manuscript: 
-## last changes: 2
 
-
-library(plspm)
+################################################################################
+## R-Script: 1_Modeling                                                       ##
+## author: Javier Lopatin                                                     ##
+## mail: javierlopatin@gmail.com                                              ##  
+##                                                                            ##
+## Manuscript: Combining ecological knowledge and remote sensing through      ##
+## structural equation modeling: A case study for peatland carbon assessments ##
+##                                                                            ##
+## description: This R-code provide the Modeling appoach used in the          ##
+### manuscript                                                                ## 
+##                                                                            ##
+################################################################################
 
 ##### set working directory
-setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
+setwd("C:/your/folder")
 
-load("peatland.RData")
-#load("ordination.RData")
+#load("peatland.RData")
 
 ### Load data ####
 data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
 names(data)
 
-# Floristic composition
+# load Floristic composition
 ordination <- read.table("data/ordination.csv", header=T, sep=",", dec=".") 
 PFT <- read.table("data/PFT.csv", header=T, sep=",", dec=".") 
 
@@ -49,6 +53,8 @@ names(data)
 ### PLS path modeling ###
 #########################
 
+library(plspm)
+
 ### Set the inner model
 # rows of the inner model matrix
 H       = c(0, 0, 0, 0, 0, 0, 0)
@@ -59,7 +65,7 @@ Rich    = c(1, 1, 1, 1, 0, 0, 0)
 Depth   = c(1, 1, 1, 1, 1, 0, 0)
 C       = c(1, 1, 1, 1, 1, 1, 0)
 
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+# matrix created by row binding. CreaciÃ³n de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
 inner = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
 # plot the inner matrix
 innerplot(inner)
@@ -106,7 +112,7 @@ save.image("peatland.RData")
 ############################################
 
 library (ncf) # correlogram
-library(ape)  # Moran´s I
+library(ape)  # MoranÂ´s I
 
 ## function to obtain the residualds from the outer and inner model
 plspmRes <- function (m, Y = NULL)
@@ -207,16 +213,12 @@ corr.soil <- correlog (xy[,1], xy[,2], z = residuals$inner_residuals[,4],
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.soil); grid(); abline(0,0, lty=2)
 
-#### Underground C stock 
+#### Belowground C stock 
 moran.C <- Moran.I(residuals$inner_residuals[,5], xy.dists.inv); moran.C
 corr.C <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,5], 
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.C); grid(); abline(0,0, lty=2)
 
-
-##################################
-### ------------------------- ###
-### Plot analysis
 
 # rescaling scores. So the LV have the same scale than the manifest variables
 rescaled.scores = plspm::rescale(PLS)
@@ -240,14 +242,15 @@ save.image("peatland.RData")
 ### Independent bootstrap validation ###
 ########################################
 
+# function to backtransform the LV from STD to raw units
 nnorm <- function(x, y){
   x <- (x * sd(y)) + mean(y)
   x
 }
 
 # set the bootstrap parameters
-N = nrow(data) # N° of observations
-B = 500             # N° of bootstrap iterations
+N = nrow(data) # NÂ° of observations
+B = 500             # NÂ° of bootstrap iterations
 
 # run bootstrapping
 site <- list()
@@ -396,8 +399,8 @@ data2 <- data.frame(site=data$Uso, C=data$Carbono_Subterraneo_kg_m2, prepro( hyp
 ## bootstrap
 
 # set the bootstrap parameters
-N = nrow(data2) # N° of observations
-B = 100        # N° of bootstrap iterations
+N = nrow(data2) # NÂ° of observations
+B = 100        # NÂ° of bootstrap iterations
 
 xobs <- list()
 xpred <- list()
