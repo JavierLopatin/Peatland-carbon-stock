@@ -42,7 +42,7 @@ mtext( bquote(paste(bold("(a)"), ": ", r^2 == .(r2), ",", " %RMSE" ==. (nRMSE), 
 ## Richness
 par(mar=c(5, 5, 3, 3))
 plot(pred.Rich ~ obs.Rich, data=pred.data, bg=as.numeric(Spointtype), xlim=c(0,18), ylim=c(0,18),#main="Species richness", 
-     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab="Observed (N° spp)", ylab="Predicted (N° spp)")
+     cex.lab=1.4, cex=1.5, cex.axis=1.3, pch=21, col=NA, las=1, bty="l", xlab="Observed (NÂ° spp)", ylab="Predicted (NÂ° spp)")
 abline(0, 1, lty=1, lwd=2)
 lm1 = lm(pred.Rich ~ obs.Rich-1, data=pred.data)
 abline(lm1, lty=2, lwd=2)
@@ -165,7 +165,7 @@ par(mar=c(0.3, 0.3, 1.8, 4))
 plot(hyper[[36]], col=color2(40), legend=F, cex.axis=0.8, main="Species richness", axes=F)
 plot(med.Rich3, col=color(40), zlim=c(5,20), legend.shrink=1, legend.width=2, cex.axis=0.8, legend.mar=8,
      axis.args=list(cex.axis=1),
-     legend.args=list(text="N° spp", side=4, line=2.5, cex=1), add=T)
+     legend.args=list(text="NÂ° spp", side=4, line=2.5, cex=1), add=T)
 plot(limit, lwd=3, lty=2, col="black", add=T)
 north.arrow(xb=610430,yb=5362950,len=15,lab="North")
 GISTools::map.scale(xc=610460,yc=5362570,len=100,units="km", ndivs=1,subdiv=0.1, scol = "black", sfcol =c("black"))
@@ -336,68 +336,60 @@ library (vegan)
 library (MASS)
 
 ## fit environmental vectors
-xdat <- data.frame(H=data$Altura_vegetacion_cm, C=data$Carbono_total, Rich=data$Riqueza_Total, 
-                   BM=data$Biomasa_total,  Cov=data$Cobertura_total, Depth=data$depth)
+xdat <- data.frame(H=scores[,1], BM=scores[,3], Rich=scores[,4], Depth=scores[,5])
 fit1 <- envfit(nmds1, xdat)
 fit2 <- envfit(nmds2, xdat)
 
+<<<<<<< HEAD:plots.R
+conservation = grep("Conservacion", data$Uso)
+productive   = grep("Productivo", data$Uso)
+
+
+svg(file = "Figures/FC2.svg", width=10, height=5.5)
+par(mfrow=c(1,2))
+
 pdf(file = "Figures/FC2.pdf", width=10, height=10)
 par(mfrow=c(2,2))
+
 # plot species ordination
 #par(mai=c(1,0.5,1,0.5))
 fig <- plot(nmds1, type = "none", xlab="Axis 1", ylab="Axis 2", bty="l", xaxs = "i", yaxs = "i", 
-            ylim=c(-2,1), xlim=c(-2.5,2), cex.lab=1.5, las=1, cex.axis=1.5)
+            ylim=c(-1.5,1), xlim=c(min(NMDS.sp1),max(NMDS.sp1)), cex.lab=1.5, las=1, cex.axis=1.5)
 points(fig, "sites", pch=16, cex=data$Carbono_total*0.18, col=rgb(0,0,0,60,maxColorValue=255))
 plot(fit1, col="red", lty=2, cex=1.5)
-mtext("(a)", side=3, line=0.5, adj=0, cex=2)
 # plot PFTs ordination
 #par(mai=c(1,0.5,1,0.5))
-fig <- plot(nmds2, type = "none",xlab="Axis 1", ylab="Axis 2", bty="l", xaxs = "i", yaxs = "i", 
-            ylim=c(-1,0.5), xlim=c(-1.5,1), cex.lab=1.5, cex.axis=1.5)
-points(fig, "sites", pch=16, cex=data$Carbono_total*0.18 , col=rgb(0,0,0,60,maxColorValue=255))
-plot(fit2, col="red", lty=2, cex=1.5)
-mtext("(b)", side=3, line=0.5, adj=0, cex=2)
-#dev.off()
+fig <- plot(nmds1, type = "none", xlab="Axis 1", ylab="Axis 2", bty="l", xaxs = "i", yaxs = "i", 
+            ylim=c(-1.5,1), xlim=c(min(NMDS.sp1),max(NMDS.sp1)), cex.lab=1.5, las=1, cex.axis=1.5)
+points(fig$sites[conservation, 1:2], pch=1, cex = 2)
+points(fig$sites[productive, 1:2], pch=2, cex = 2)
+plot(fit1, col="red", lty=2, cex=1.5)
+legend("bottomright", legend = c("Conservation", "Productive"), pch=c(1,2), cex=1.3, bty = "n")
+dev.off()
 
-## scaterplots
-# species
-Predicted = pred_m1
-Observed = m1data$x
-plot(Observed, Predicted, xlim=c(-1,1), ylim=c(-1,1), col=rgb(0,0,0,50,maxColorValue=255),bty="l",
-     xlab = "Observed axis", ylab = "Predicted axis", pch=16, pty="s", cex=2, cex.lab=1.5, xaxs="i", yaxs="i",
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
-abline(lm1, lty=2, lwd=2)
-bias <- 1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
-pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-mtext("(c)", side=3, line=0.5, adj=0, cex=2)
-# PFTs
-Predicted = pred_m2
-Observed = m2data$x
-plot(Observed, Predicted, xlim=c(-1,1), ylim=c(-1,1), col=rgb(0,0,0,50,maxColorValue=255), bty="l",
-     xlab = "Observed axis", ylab = "Predicted axis", pch=16, pty="s", cex=2, cex.lab=1.5, xaxs="i", yaxs="i",
-     cex.axis=1.5, las= 1)
-abline(0, 1, lty=2)
-R2 <- (cor(Predicted, Observed, method="pearson"))^2
-RMSE <- sqrt(mean((Observed-Predicted)^2))
-NRMSE <- (RMSE/(max(Observed)-min(Observed)))*100
-lm1 = lm(Predicted ~ Observed-1)
-abline(lm1, lty=2, lwd=2)
-bias <- 1-coef(lm1)
-txt1 = paste( "r2 =", round(R2,2))
-txt3 = paste("%RMSE =",round(NRMSE,2), "")
-txt4 = paste("bias =",round(bias,2), "")
-txt = paste(txt1, txt3, txt4, sep="\n") 
-pusr = par()$usr
-text(x=pusr[1]+0.02*(pusr[2]-pusr[1]), y=pusr[4]-0.02*(pusr[4]-pusr[3]), txt, adj=c(0,1), cex=1.5)
-mtext("(d)", side=3, line=0.5, adj=0, cex=2)
+# scores
+library(grDevices)
+library(rasterImage)
+library(Cairo)
+
+colfunc1 <- colorPalette(100)
+#colfunc2 <- colorPalette(50, "jc")
+
+plot_ordiAxis <- function(axis, color){ 
+  legend_image <- as.raster(matrix(color, ncol=1))
+  plot(c(min(axis), max(axis)), c(-0.5,1), type = 'n', axes = F,xlab = '', ylab = '', main = '')
+  rasterImage(t(legend_image), min(axis)-0.05, 0, max(axis)+0.05, 1)
+  points( axis, rep(0.5, length(axis)), pch=16, cex=1.5 )
+  for(i in 1:length(axis)) lines( c(axis[i], axis[i]), c(0, 0.5), lwd=2 )
+  text(x=round(seq(min(axis), max(axis),l=5), 1), y = -0.2, labels = round(seq(min(axis), max(axis),l=5), 1), cex=2 )
+}
+
+# plot axis1 species ordination
+svg(filename = "Figures/sp_axis1.svg", width=11, height=3)
+plot_ordiAxis(NMDS.sp1, colfunc1)
+dev.off()
+
+# plot axis1 PFT ordination
+svg(filename = "Figures/pft_axis1.svg", width=11, height=3)
+plot_ordiAxis(NMDS.PFT1, colfunc1)
 dev.off()
