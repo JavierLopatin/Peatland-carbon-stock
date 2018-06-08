@@ -4,8 +4,8 @@
 ## author: Javier Lopatin                                                     ##
 ## mail: javierlopatin@gmail.com                                              ##  
 ##                                                                            ##
-## Manuscript: Combining ecological knowledge and remote sensing through      ##
-## structural equation modeling: A case study for peatland carbon assessments ##
+## Manuscript: Mapping peatland belowground C stock using UAV-based vegetation##
+## traits and structural equation modeling                                    ##
 ##                                                                            ##
 ## description: This R-code provide the Modeling appoach used in the          ##
 ### manuscript                                                                ## 
@@ -14,14 +14,9 @@
 
 ##### set working directory
 setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
-memory <- "D:/Peatland1/peatland.RData"
-
-#load(memory)
-#load("ordination.RData")
-
+memory <- "H:/Peatland1/peatland.RData"
 setwd("C:/your/folder")
-
-#load("peatland.RData")
+load("ordination.RData")
 
 ### Load data ####
 data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
@@ -63,26 +58,27 @@ data$NNMDS.sp1 <- data$NMDS.sp1 * -1
 
 names(data)
 
+#########################################
+### Plot-based models
+#########################################
 
-#########################
-### PLS path modeling ###
-#########################
+################################
+### Tuning PLS path modeling ###
+################################
 
 library(plspm)
 
 ### Set the inner model
 # rows of the inner model matrix
-H       = c(0, 0, 0, 0, 0, 0)
 FC      = c(0, 0, 0, 0, 0, 0)
+H       = c(1, 0, 0, 0, 0, 0)
 BM      = c(1, 1, 0, 0, 0, 0)
 Rich    = c(1, 1, 0, 0, 0, 0)
-Depth   = c(0, 1, 1, 1, 0, 0)
+Depth   = c(1, 0, 1, 1, 0, 0)
 C       = c(1, 1, 1, 1, 1, 0)
 
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-inner = rbind(H, FC,  BM, Rich, Depth, C) ; colnames(inner) = rownames(inner)
 # matrix created by row binding. CreaciÃ³n de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
-inner = rbind(H, FC,  Cov, BM, Rich, Depth, C) ; colnames(under.inner) = rownames(under.inner)
+inner = rbind(FC, H, BM, Rich, Depth, C) ; colnames(inner) = rownames(inner)
 # plot the inner matrix
 innerplot(inner)
 
@@ -125,37 +121,33 @@ innerplot(PLS, arr.pos = 0.35) # inner model
 save.image("peatland.RData")
 
 
-###################################
-### predict using other methods
-library(autopls)
+#############################
+### Tuning Random forest ####
+#############################
+
 library(randomForest)
 library(caret)
-library(e1071)
 
-data_plot <- data[,c(4:6,10,11,30:36,53:59,26)]
-colnames(data_plot)[20] <- "C"
-colnames(data_plot)
+# data to use
+data2 <- plspm::rescale(PLS)
 
 ## leave-one-out cross validation
 train_control <- trainControl(method="LOOCV")
 
-# grid for SVM
-grid <- expand.grid(sigma = c(0.0001, 0.001, 0.01, 0.1),
-                    C = c(1,10,10,100,1000))
-
-# RF
+# train model
 set.seed(123)
-fitRF <- train(C~., data=data_plot, trControl=train_control, tuneLength = 10, method="rf")
+fitRF <- train(C~., data=data2, trControl=train_control, tuneLength = 10, method="rf")
 fitRF
 
-# SVM radial kernel
-set.seed(123)
-fitSVM <- train(C~., data=data_plot, trControl=train_control, tuneGrid = grid,
-                preProc = c("center","scale"), method="svmRadial")
-fitSVM
+# VarImport
+importance(fitRF)
+
+############################################################
+### Check for autocorrelation in the PLS-PM construction ###
+############################################################
 
 library (ncf) # correlogram
-library(ape)  # Moran´s I
+library(ape)  # MoranÂ´s I
 
 ## function to obtain the residualds from the outer and inner model
 plspmRes <- function (m, Y = NULL)
@@ -278,42 +270,21 @@ panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
   text(0.5, 0.5, txt, cex = cex.cor * r)
 }
 pairs(rescaled.scores, pch = 16, col = "blue", panel=panel.smooth, upper.panel=panel.cor)
->>>>>>> origin/master:1_Modeling.R
 
 
-########################################
-### Independent bootstrap validation ###
-########################################
+################################
+### Bootstrapping validation ###
+################################
 
-nnorm <- function(x){
-  if (is.vector(x)){
-    y = (x - mean(x)) / sd(x)
-  }
-  if (class(x) == 'RasterLayer'){
-    y = (x - mean(na.omit(values(x)))) / sd(na.omit(values(x)))
-  }
-  y
-}
-
-# set the bootstrap parameters
-N = nrow(data) # N° of observations
-
-# function to backtransform the LV from STD to raw units
+# backtransform the LV from STD to raw units
 nnorm <- function(x, y){
   x <- (x * sd(y)) + mean(y)
   x
 }
 
 # set the bootstrap parameters
-N = nrow(data) # NÂ° of observations
-B = 500             # NÂ° of bootstrap iterations
-
-outer2 = list (c("Altura_vegetacion_cm"),                               # heigts
-              c("NNMDS.sp1","NMDS.PFT1"),                               # FC
-              c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
-              c("gramm_richness","Herb_richness"),                      # Richness
-              c("depth"),                                               # soil depth
-              c("Carbono_Subterraneo_kg_m2"))
+N = nrow(data) # N° of observations
+B = 500        # N° of bootstrap iterations
 
 ### Bootstrapping to estimate C stock with different models
 site <- list()
@@ -324,134 +295,14 @@ PLSPM.r2 <- list()
 PLSPM.rmse <- list()
 PLSPM.Nrmse <- list()
 PLSPM.bias <- list()
-# PLSR
-PLSR.pred <- list()
-PLSR.r2 <- list()
-PLSR.rmse <- list()
-PLSR.Nrmse <- list()
-PLSR.bias <- list()
 # RF
 RF.pred <- list()
 RF.r2 <- list()
 RF.rmse <- list()
 RF.Nrmse <- list()
 RF.bias <- list()
-# SVM
-SVM.pred <- list()
-SVM.r2 <- list()
-SVM.rmse <- list()
-SVM.Nrmse <- list()
-SVM.bias <- list()
 
-#### Direct estimation
-for(i in 1:500){
-  
-  # create random numbers with replacement to select samples from each group
-  idx = sample(1:N, N, replace=TRUE)
-  
-  # select subsets of the five groups based on the random numbers
-  train <- data[idx,]
-  train2 <- data_plot[idx,]
-  val <- data[-idx, ]
-  val22 <- data_plot[-idx,]
-  
-  ### Run PLSPM for aboveground C stock
-  PLSrun = plspm(train, inner, outer2, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
-  # model scores
-  Scores <- as.data.frame(PLSrun$scores)
-  # rescales
-  #rescaled.run = plspm::rescale(PLSrun)
-  
-  # create validation data from outer model loadings
-  H.val     <- nnorm( val[, 1] )
-  FC.val    <- nnorm( (val[, 2]*PLSrun$outer_model$weight[2]) + (val[, 3]*PLSrun$outer_model$weight[3]) )
-  BM.val    <- nnorm( (val[, 4]*PLSrun$outer_model$weight[4]) + (val[, 5]*PLSrun$outer_model$weight[5]) )
-  Rich.val  <- nnorm( (val[, 6]*PLSrun$outer_model$weight[6]) + (val[, 7]*PLSrun$outer_model$weight[7]) )
-  Depth.val <- nnorm( val[, 8] )
-  C.val     <- nnorm( val$Carbono_Subterraneo_kg_m2 )
-  valData   <- data.frame(H=H.val, FC=FC.val, BM=BM.val, Rich=Rich.val, Depth=Depth.val, C=C.val)
-  
-  # PLSR
-  PLSRrun <- autopls(C ~., data=train2, verbose=F)
-  # RF
-  RFrun <- randomForest(C ~., data=train2, mtry=fitRF$bestTune$mtry, mtree=500, verbose=F)
-  # SVM
-  SVMrun <- svm(C ~., data=train2, sigma=fitSVM$bestTune$sigma, cost=fitSVM$bestTune$C)
-  
-  ### Prediction to validation data
-  # PLSPM (only significant path coefficients)
-  predPLSPM <- PLSrun$inner_mode$C[1] + H.val*PLSrun$inner_mode$C[2] + Depth.val*PLSrun$inner_mode$C[6]
-  #predPLSPM <- nnorm(predPLSPM)#, rescaled.run$C)
-  predPLSR <- predict(PLSRrun, as.matrix(val22[,1:ncol(val22)-1]))
-  predRF <- predict(RFrun, val22, type="response" )
-  predSVM  <- predict(SVMrun, val22, type="response" )
-  
-  # store the model accuracies
-  site[[i]] <- train$Uso
-  obs = val22$C
-  Obs[[i]] <- obs
-
-  PLSPM.pred[[i]] <- predPLSPM
-  PLSPM.r2[[i]] <- (cor(predPLSPM, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - predPLSPM)^2))
-  PLSPM.rmse[[i]] <- s1
-  PLSPM.Nrmse[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(predPLSPM ~ obs-1)
-  PLSPM.bias[[i]] <- 1-coef(lm)
-  
-  PLSR.pred[[i]] <- predPLSR
-  PLSR.r2[[i]] <- (cor(predPLSR, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - predPLSR)^2))
-  PLSR.rmse[[i]] <- s1
-  PLSR.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
-  lm = lm(predPLSR ~ obs-1)
-  PLSR.bias[[i]] <- 1-coef(lm)
-  
-  RF.pred[[i]] <- predRF
-  RF.r2[[i]] <- (cor(predRF, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - predRF)^2))
-  RF.rmse[[i]] <- s1
-  RF.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
-  lm = lm(predRF ~ obs-1)
-  RF.bias[[i]] <- 1-coef(lm)
-  
-  SVM.pred[[i]] <- predSVM
-  SVM.r2[[i]] <- (cor(predSVM, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - predSVM)^2))
-  SVM.rmse[[i]] <- s1
-  SVM.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
-  lm = lm(predSVM ~ obs-1)
-  SVM.bias[[i]] <- 1-coef(lm)
-  
-  print(i)
-}
-
-median(unlist(PLSPM.r2)); median(unlist(PLSPM.Nrmse)); median(unlist(PLSPM.bias))
-median(unlist(PLSR.r2)); median(unlist(PLSR.Nrmse)); median(unlist(PLSR.bias))
-median(unlist(RF.r2)); median(unlist(RF.Nrmse)); median(unlist(RF.bias))
-median(unlist(SVM.r2)); median(unlist(SVM.Nrmse)); median(unlist(SVM.bias))
-
-# ######################################################## 
-#### component-based estimation
-# data to use
-data2 <- PLS$manifests[1:36, 1:11]
-data3 <- plspm::rescale(PLS)
-
-## train data
-set.seed(123)
-fitRF <- train(C~., data=data3, trControl=train_control, tuneLength = 10, method="rf")
-fitSVM <- train(C~., data=data3, trControl=train_control, tuneGrid = grid,
-                 preProc = c("center","scale"), method="svmRadial")
-
-# plspm outer model
-outer = list (c("Altura_vegetacion_cm"),                            # heigts
-              c("NNMDS.sp1","NMDS.PFT1"),                               # FC
-              c("Biomasa_herbaceas_kg_m2","Biomasa_arbustivas_kg_m2"),  # Biomass
-              c("gramm_richness","Herb_richness"),                      # Richness
-              c("depth"),                                               # soil depth
-              c("Carbono_Subterraneo_kg_m2","Carbono_musgo_kg_m2", "Carbono_R1_kg_m2"))#, "Carbono_R2_kg_m2", "NCarbono_R3_kg_m2"))
-
+# Iteration
 for(i in 1:500){
   
   # create random numbers with replacement to select samples from each group
@@ -459,9 +310,9 @@ for(i in 1:500){
   
   # select subsets of the five groups based on the random numbers
   train1 <- data[idx,] # for PLSPM
-  train2 <- data3[idx,] # for the rest
+  train2 <- data3[idx,] # for RF
   val1 <- data2[-idx, ] # for PLSPM
-  val2 <- data3[-idx, ] # for the rest
+  val2 <- data3[-idx, ] # for RF
 
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, inner, outer, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
@@ -479,20 +330,13 @@ for(i in 1:500){
   C.val <-    nnorm( (val1[, 9]*PLSrun$outer_model$weight[9]) + (val1[, 10]*PLSrun$outer_model$weight[10]) + (val1[, 11]*PLSrun$outer_model$weight[11]) )
   valData <- data.frame(H=H.val, FC=FC.val, BM=BM.val, Rich=Rich.val, Depth=Depth.val, C=C.val)
   
-  # PLSR
-  PLSRrun <- autopls(C ~., data=train2, verbose=F)
   # RF
   RFrun <- randomForest(C ~., data=train2, mtry=fitRF$bestTune$mtry, mtree=500, verbose=F)
-  # SVM
-  SVMrun <- svm(C ~., data=train2, sigma=fitSVM$bestTune$sigma, cost=fitSVM$bestTune$C)
   
   ### Prediction to validation data
   # PLSPM (only significant path coefficients)
-  predPLSPM <- PLSrun$inner_mode$C[1] + H.val*PLSrun$inner_mode$C[2] + Depth.val*PLSrun$inner_mode$C[6]
-  #predPLSPM <- nnorm(predPLSPM, rescaled.run$C)
-  predPLSR <- predict(PLSRrun, as.matrix(val2[, 1:ncol(val2)-1]))
+  predPLSPM <- PLSrun$inner_mode$C[1] + H.val*PLSrun$inner_mode$C[2] + (BM.val*PLSrun$inner_mode$C[3] + Rich.val*PLSrun$inner_mode$C[4])
   predRF <- predict(RFrun, val2, type="response" )
-  predSVM  <- predict(SVMrun, val2, type="response" )
   
   # store the model accuracies
   site[[i]] <- train$Uso
@@ -508,15 +352,6 @@ for(i in 1:500){
   lm = lm(pred ~ obs-1)
   PLSPM.bias[[i]] <- 1-coef(lm)
   
-  pred = predPLSR
-  PLSR.pred[[i]] <- pred
-  PLSR.r2[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse[[i]] <- s1
-  PLSR.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias[[i]] <- 1-coef(lm)
-  
   pred = predRF
   RF.pred[[i]] <- pred
   RF.r2[[i]] <- (cor(pred, obs, method="pearson"))^2
@@ -525,15 +360,6 @@ for(i in 1:500){
   RF.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
   RF.bias[[i]] <- 1-coef(lm)
-  
-  pred = predSVM
-  SVM.pred[[i]] <- pred
-  SVM.r2[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse[[i]] <- s1
-  SVM.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias[[i]] <- 1-coef(lm)
   
   print(i)
 }
@@ -545,13 +371,16 @@ median(unlist(SVM.r2)); median(unlist(SVM.Nrmse)); median(unlist(SVM.bias))
 
 save.image("peatland.RData")
 
-#################################################
-#### Predict Richness, BM, FC and Soil depth ####
-#################################################
+
+
+#########################################
+### UAV-based models
+#########################################
 
 ##########################
 ### Tune PLS-PM models ###
 ##########################
+
 colnames(RSData_BN) = c( colnames(spectra), colnames(lidar) )
 colnames(MNF) = c( "MNF1", "MNF2", "MNF3", colnames(lidar) )
 rm(lidar)
@@ -574,7 +403,7 @@ Height    = c(0, 0, 0, 0)
 Structure = c(0, 0, 0, 0)
 X         = c(1, 1, 1, 0)
 
-# matrix created by row binding. Creación de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
+# matrix created by row binding. CreaciÃ³n de las variables latentes(Agrupaciones ficticias de las variables respuesta y predictoras)
 inner = rbind(Spec, Height, Structure, X); colnames(inner) = rownames(inner)
 # plot the inner matrix
 innerplot(inner)
@@ -637,91 +466,38 @@ PLS_C = plspm(RS_test_data, inner, outer_C, modes, maxiter= 1000, boot.val = F, 
 PLS_C$outer
 PLS_C$inner_summary
 
-#########################
-### Tune other models ###
-#########################
+######################
+### Tune RF models ###
+######################
 
-########
 ### FC
-# PLSR
-#set.seed(123)
-#fitPLSR_FC <- train( FC ~., data=RS_test_data2[, c(2, 8:ncol(RSdata2))], trControl=train_control, tuneLength = 10, method="pls")
-#fitPLSR_FC
-# RF
 set.seed(123)
 fitRF_FC <- train(FC ~., data=RS_test_data2[, c(2, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
 fitRF_FC
-# SVM radial kernel
-set.seed(123)
-fitSVM_FC <- train(FC ~., data=RS_test_data2[, c(2, 8:ncol(RS_test_data2))], trControl=train_control, tuneGrid = grid,
-                preProc = c("center","scale"), method="svmRadial")
-fitSVM_FC
 
-########
 ### BM
-# PLSR
-#set.seed(123)
-#fitPLSR_BM <- train(BM ~., data=RS_test_data2[, c(3, 8:ncol(RSdata2))], trControl=train_control, tuneLength = 10, method="pls")
-#fitPLSR_BM
-# RF
 set.seed(123)
 fitRF_BM <- train(BM ~., data=RS_test_data2[, c(3, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
 fitRF_BM
-# SVM radial kernel
-set.seed(123)
-fitSVM_BM <- train(BM ~., data=RS_test_data2[, c(3, 8:ncol(RS_test_data2))], trControl=train_control, tuneGrid = grid,
-                    preProc = c("center","scale"), method="svmRadial")
-fitSVM_BM
 
-########
 ### Richness
-# PLSR
-#set.seed(123)
-#fitPLSR_Rich <- train(Rich ~., data=RS_test_data2[, c(4, 8:ncol(RSdata2))], trControl=train_control, tuneLength = 10, method="pls")
-#fitPLSR_Rich
-# RF
 set.seed(123)
 fitRF_Rich <- train(Rich ~., data=RS_test_data2[, c(4, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
 fitRF_Rich
-# SVM radial kernel
-set.seed(123)
-fitSVM_Rich <- train(Rich ~., data=RS_test_data2[, c(4, 8:ncol(RS_test_data2))], trControl=train_control, tuneGrid = grid,
-                    preProc = c("center","scale"), method="svmRadial")
-fitSVM_Rich
 
 ### Soil depth
-# PLSR
-#set.seed(123)
-#fitPLSR_depth <- train(Depth ~., data=RS_test_data2[, c(5, 8:ncol(RS_test_data2))], trControl=train_control, tuneLength = 10, method="pls")
-#fitPLSR_depth
-# RF
 set.seed(123)
 fitRF_depth <- train(Depth ~., data=RS_test_data2[, c(5, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
 fitRF_depth
-# SVM radial kernel
-set.seed(123)
-fitSVM_depth <- train(Depth ~., data=RS_test_data2[, c(5, 8:ncol(RS_test_data2))], trControl=train_control, tuneGrid = grid,
-                      preProc = c("center","scale"), method="svmRadial")
-fitSVM_depth
 
 ### C
-# PLSR
-#set.seed(123)
-#fitPLSR_C<- train(C ~., data=RS_test_data2[, c(6, 8:ncol(RSdata2))], trControl=train_control, tuneLength = 10, method="pls")
-#fitPLSR_C
-# RF
 set.seed(123)
 fitRF_C<- train(C ~., data=RS_test_data2[, c(6, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
 fitRF_depth
-# SVM radial kernel
-set.seed(123)
-fitSVM_C<- train(C ~., data=RS_test_data2[, c(6, 8:ncol(RS_test_data2))], trControl=train_control, tuneGrid = grid,
-                       preProc = c("center","scale"), method="svmRadial")
-fitSVM_C
 
-###############################
-### Bootstrapping iteration ###
-###############################
+################################
+### Bootstrapping validation ###
+################################
 
 site <- list()
 H_val <- list()
@@ -761,37 +537,6 @@ PLSPM.rmse_C<- list()
 PLSPM.Nrmse_C<- list()
 PLSPM.bias_C<- list()
 
-# PLSR
-PLSR.pred_FC <- list()
-PLSR.r2_FC <- list()
-PLSR.rmse_FC <- list()
-PLSR.Nrmse_FC <- list()
-PLSR.bias_FC <- list()
-
-PLSR.pred_BM <- list()
-PLSR.r2_BM <- list()
-PLSR.rmse_BM <- list()
-PLSR.Nrmse_BM <- list()
-PLSR.bias_BM <- list()
-
-PLSR.pred_Rich <- list()
-PLSR.r2_Rich <- list()
-PLSR.rmse_Rich <- list()
-PLSR.Nrmse_Rich <- list()
-PLSR.bias_Rich <- list()
-
-PLSR.pred_depth <- list()
-PLSR.r2_depth <- list()
-PLSR.rmse_depth <- list()
-PLSR.Nrmse_depth <- list()
-PLSR.bias_depth <- list()
-
-PLSR.pred_C<- list()
-PLSR.r2_C<- list()
-PLSR.rmse_C<- list()
-PLSR.Nrmse_C<- list()
-PLSR.bias_C<- list()
-
 # RF
 RF.pred_FC <- list()
 RF.r2_FC <- list()
@@ -823,38 +568,7 @@ RF.rmse_C<- list()
 RF.Nrmse_C<- list()
 RF.bias_C<- list()
 
-# SVM
-SVM.pred_FC <- list()
-SVM.r2_FC <- list()
-SVM.rmse_FC <- list()
-SVM.Nrmse_FC <- list()
-SVM.bias_FC <- list()
-
-SVM.pred_BM <- list()
-SVM.r2_BM <- list()
-SVM.rmse_BM <- list()
-SVM.Nrmse_BM <- list()
-SVM.bias_BM <- list()
-
-SVM.pred_Rich <- list()
-SVM.r2_Rich <- list()
-SVM.rmse_Rich <- list()
-SVM.Nrmse_Rich <- list()
-SVM.bias_Rich <- list()
-
-SVM.pred_depth <- list()
-SVM.r2_depth <- list()
-SVM.rmse_depth <- list()
-SVM.Nrmse_depth <- list()
-SVM.bias_depth <- list()
-
-SVM.pred_C<- list()
-SVM.r2_C<- list()
-SVM.rmse_C<- list()
-SVM.Nrmse_C<- list()
-SVM.bias_C<- list()
-
-for(i in 416:500){
+for(i in 1:500){
   
   # create random numbers with replacement to select samples from each group
   idx = sample(1:N, N, replace=TRUE)
@@ -910,26 +624,14 @@ for(i in 416:500){
   CData <- data.frame(Spec=Spec_C, Height=Height_C, Structure=Structure_C, C=val1$data.depth)
   
   ############################
-  #### train other models ####
+  #### train RF ####
   ############################
-  ### PLSR
-  PLSRrun_FC    <- autopls(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], verbose=F)
-  PLSRrun_BM    <- autopls(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], verbose=F)
-  PLSRrun_Rich  <- autopls(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], verbose=F)
-  PLSRrun_Depth <- autopls(Depth ~., data=train2[, c(5, 8:ncol(RSdata2))], verbose=F)
-  PLSRrun_C     <- autopls(C ~., data=train2[, c(6, 8:ncol(RSdata2))], verbose=F)
-  # RF
+  
   RFrun_FC <- randomForest(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], mtry=fitRF_FC$bestTune$mtry, mtree=500, verbose=F)
   RFrun_BM <- randomForest(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], mtry=fitRF_BM$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Rich <- randomForest(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], mtry=fitRF_Rich$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Depth <- randomForest(Depth ~., data=train2[, c(5, 8:ncol(RSdata2))], mtry=fitRF_depth$bestTune$mtry, mtree=500, verbose=F)
   RFrun_C <- randomForest(C ~., data=train2[, c(6, 8:ncol(RSdata2))], mtry=fitRF_C$bestTune$mtry, mtree=500, verbose=F)
-  # SVM
-  SVMrun_FC <- svm(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], cost=fitSVM_FC$bestTune$C, gamma=fitSVM_FC$bestTune$sigma)
-  SVMrun_BM <- svm(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], cost=fitSVM_BM$bestTune$C, gamma=fitSVM_BM$bestTune$sigma)
-  SVMrun_Rich <- svm(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], cost=fitSVM_Rich$bestTune$C, gamma=fitSVM_Rich$bestTune$sigma)
-  SVMrun_Depth <- svm(Depth ~., data=train2[, c(5, 8:ncol(RSdata2))], cost=fitSVM_depth$bestTune$C, gamma=fitSVM_depth$bestTune$sigma)
-  SVMrun_C <- svm(train2$C ~., data=train2[, c(6, 8:ncol(RSdata2))], cost=fitSVM_C$bestTune$C, gamma=fitSVM_C$bestTune$sigma)
   
   ### Prediction to validation data
   # PLSPM 
@@ -939,29 +641,18 @@ for(i in 416:500){
   predPLSPM_Depth <- PLSrun_Depth$inner_model$X[1] + Spec_Depth*PLSrun_Depth$inner_model$X[2] + Height_Depth*PLSrun_Depth$inner_model$X[3] + Structure_Depth*PLSrun_Depth$inner_model$X[4]
   predPLSPM_C     <- PLSrun_C$inner_model$X[1] + Spec_C*PLSrun_C$inner_model$X[2] + Height_C*PLSrun_C$inner_model$X[3] + Structure_C*PLSrun_C$inner_model$X[4]
 
-  # PLSR
-  predPLSR_FC    <- predict(PLSRrun_FC, as.matrix(val2[, 8:ncol(RSdata2)]))
-  predPLSR_BM    <- predict(PLSRrun_BM, as.matrix(val2[, 8:ncol(RSdata2)]))
-  predPLSR_Rich  <- predict(PLSRrun_Rich, as.matrix(val2[, 8:ncol(RSdata2)]))
-  predPLSR_Depth <- predict(PLSRrun_Depth, as.matrix(val2[, 8:ncol(RSdata2)]))
-  predPLSR_C     <- predict(PLSRrun_C, as.matrix(val2[, 8:ncol(RSdata2)]))
   # RF
   predRF_FC <- predict(RFrun_FC, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_BM <- predict(RFrun_BM, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_Rich <- predict(RFrun_Rich, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_Depth <- predict(RFrun_Depth, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_C <- predict(RFrun_C, val2[, 8:ncol(RSdata2)], type="response" )
-  # SVM (radial kernel)
-  predSVM_FC  <- predict(SVMrun_FC, val2[, 8:ncol(RSdata2)], type="response" )
-  predSVM_BM  <- predict(SVMrun_BM, val2[, 8:ncol(RSdata2)], type="response" )
-  predSVM_Rich  <- predict(SVMrun_Rich, val2[, 8:ncol(RSdata2)], type="response" )
-  predSVM_Depth  <- predict(SVMrun_Depth, val2[, 8:ncol(RSdata2)], type="response" )
-  predSVM_C  <- predict(SVMrun_C, val2[, 8:ncol(RSdata2)], type="response" )
-  
+ 
   # store the model accuracies
   site[[i]] <- data$Uso[idx]
   H_val[[i]] <- Height_C
-  #### PLS-PM
+ 
+   #### PLS-PM
   # FC
   obs = Scores_FC$X
   pred = predPLSPM_FC
@@ -1018,63 +709,6 @@ for(i in 416:500){
   lm = lm(pred ~ obs-1)
   PLSPM.bias_C[[i]] <- 1-coef(lm)
   
-  #### PLSR
-  # FC
-  obs = val2$FC
-  pred = predPLSR_FC
-  Obs_FC[[i]] <- obs
-  PLSR.pred_FC[[i]] <- pred
-  PLSR.r2_FC[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse_FC[[i]] <- s1
-  PLSR.Nrmse_FC[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias_FC[[i]] <- 1-coef(lm)
-  # BM
-  obs = val2$BM
-  pred = predPLSR_BM
-  Obs_BM[[i]] <- obs
-  PLSR.pred_BM[[i]] <- pred
-  PLSR.r2_BM[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse_BM[[i]] <- s1
-  PLSR.Nrmse_BM[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias_BM[[i]] <- 1-coef(lm)
-  # Rich
-  obs = val2$Rich
-  pred = predPLSR_Rich
-  Obs_Rich[[i]] <- obs
-  PLSR.pred_Rich[[i]] <- pred
-  PLSR.r2_Rich[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse_Rich[[i]] <- s1
-  PLSR.Nrmse_Rich[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias_Rich[[i]] <- 1-coef(lm)
-  # Depth
-  obs = val2$Depth
-  pred = predPLSR_Depth
-  Obs_Depth[[i]] <- obs
-  PLSR.pred_depth[[i]] <- pred
-  PLSR.r2_depth[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse_depth[[i]] <- s1
-  PLSR.Nrmse_depth[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias_depth[[i]] <- 1-coef(lm)  
-  # C
-  obs = val2$C
-  pred = predPLSR_C
-  Obs_C[[i]] <- obs
-  PLSR.pred_C[[i]] <- pred
-  PLSR.r2_C[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  PLSR.rmse_C[[i]] <- s1
-  PLSR.Nrmse_C[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  PLSR.bias_C[[i]] <- 1-coef(lm)  
-  
   #### RF
   # FC
   obs = val2$FC
@@ -1127,289 +761,23 @@ for(i in 416:500){
   lm = lm(pred ~ obs-1)
   RF.bias_C[[i]] <- 1-coef(lm) 
 
-  #### SVM
-  # FC
-  obs = val2$FC
-  pred = predSVM_FC
-  SVM.pred_FC[[i]] <- pred
-  SVM.r2_FC[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse_FC[[i]] <- s1
-  SVM.Nrmse_FC[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias_FC[[i]] <- 1-coef(lm)
-  # BM
-  obs = val2$BM
-  pred = predSVM_BM
-  SVM.pred_BM[[i]] <- pred
-  SVM.r2_BM[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse_BM[[i]] <- s1
-  SVM.Nrmse_BM[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias_BM[[i]] <- 1-coef(lm)
-  # Rich
-  obs = val2$Rich
-  pred = predSVM_Rich
-  SVM.pred_Rich[[i]] <- pred
-  SVM.r2_Rich[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse_Rich[[i]] <- s1
-  SVM.Nrmse_Rich[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias_Rich[[i]] <- 1-coef(lm)
-  # Depth
-  obs = val2$Depth
-  pred = predSVM_Depth
-  SVM.pred_depth[[i]] <- pred
-  SVM.r2_depth[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse_depth[[i]] <- s1
-  SVM.Nrmse_depth[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias_depth[[i]] <- 1-coef(lm)  
-  # C
-  obs = val2$C
-  pred = predSVM_C
-  SVM.pred_C[[i]] <- pred
-  SVM.r2_C[[i]] <- (cor(pred, obs, method="pearson"))^2
-  s1 <- sqrt(mean((obs - pred)^2))
-  SVM.rmse_C[[i]] <- s1
-  SVM.Nrmse_C[[i]]<- (s1/(max(obs)-min(obs)))*100
-  lm = lm(pred ~ obs-1)
-  SVM.bias_C[[i]] <- 1-coef(lm)  
-  
   print(i)
 }
 
 median(unlist(PLSPM.r2_FC)); median(unlist(PLSPM.Nrmse_FC)); median(unlist(PLSPM.bias_FC))
-median(unlist(PLSR.r2_FC)); median(unlist(PLSR.Nrmse_FC)); median(unlist(PLSR.bias_FC))
 median(unlist(RF.r2_FC)); median(unlist(RF.Nrmse_FC));median(unlist(RF.bias_FC)) 
-median(unlist(SVM.r2_FC)); median(unlist(SVM.Nrmse_FC)); median(unlist(SVM.bias_FC))
 
 median(unlist(PLSPM.r2_BM)); median(unlist(PLSPM.Nrmse_BM)); median(unlist(PLSPM.bias_BM))
-median(unlist(PLSR.r2_BM)); median(unlist(PLSR.Nrmse_BM)); median(unlist(PLSR.bias_BM))
 median(unlist(RF.r2_BM)); median(unlist(RF.Nrmse_BM));median(unlist(RF.bias_BM)) 
-median(unlist(SVM.r2_BM)); median(unlist(SVM.Nrmse_BM)); median(unlist(SVM.bias_BM))
 
 median(unlist(PLSPM.r2_Rich)); median(unlist(PLSPM.Nrmse_Rich)); median(unlist(PLSPM.bias_Rich))
-median(unlist(PLSR.r2_Rich)); median(unlist(PLSR.Nrmse_Rich)); median(unlist(PLSR.bias_Rich))
 median(unlist(RF.r2_Rich)); median(unlist(RF.Nrmse_Rich));median(unlist(RF.bias_Rich)) 
-median(unlist(SVM.r2_Rich)); median(unlist(SVM.Nrmse_Rich)); median(unlist(SVM.bias_Rich))
 
 median(unlist(PLSPM.r2_depth)); median(unlist(PLSPM.Nrmse_depth)); median(unlist(PLSPM.bias_depth))
-median(unlist(PLSR.r2_depth)); median(unlist(PLSR.Nrmse_depth)); median(unlist(PLSR.bias_depth))
 median(unlist(RF.r2_depth)); median(unlist(RF.Nrmse_depth));median(unlist(RF.bias_depth)) 
-median(unlist(SVM.r2_depth)); median(unlist(SVM.Nrmse_depth)); median(unlist(SVM.bias_depth))
 
 median(na.omit(unlist(PLSPM.r2_C))); median(unlist(PLSPM.Nrmse_C)); median(unlist(PLSPM.bias_C))
-median(na.omit(unlist(PLSR.r2_C))); median(unlist(PLSR.Nrmse_C)); median(unlist(PLSR.bias_C))
 median(na.omit(unlist(RF.r2_C))); median(unlist(RF.Nrmse_C));median(unlist(RF.bias_C)) 
-median(na.omit(unlist(SVM.r2_C))); median(unlist(SVM.Nrmse_C)); median(unlist(SVM.bias_C))
 
 save.image("peatland.RData")
-
-#######################################################
-##Old code
-# run bootstrapping
-site <- list()
-# BM
-BM.obs <- list()
-BM.pred <- list()
-BM.r2 <- list()
-BM.rmse <- list()
-BM.Nrmse <- list()
-BM.bias <- list()
-# Rich
-Rich.obs <- list()
-Rich.pred <- list()
-Rich.r2 <- list()
-Rich.rmse <- list()
-Rich.Nrmse <- list()
-Rich.bias <- list()
-# Soil depth
-soil.obs <- list()
-soil.pred <- list()
-soil.r2 <- list()
-soil.rmse <- list()
-soil.Nrmse <- list()
-soil.bias <- list()
-# C stock
-C.obs <- list()
-C.pred <- list()
-C.r2 <- list()
-C.rmse <- list()
-C.Nrmse <- list()
-C.bias <- list()
-
-set.seed(123)
-for(i in 1:B){
-  
-  # create random numbers with replacement to select samples from each group
-  idx = sample(1:N, N, replace=TRUE)
-  
-  # select subsets of the five groups based on the random numbers
-  train <- data[idx,]
-  
-  ### Run PLSPM for aboveground C stock
-  PLSrun = plspm(train, inner, outer, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
-  # model scores
-  Scores <- PLSrun$scores
-  rescaled.run <- plspm::rescale(PLSrun)
- 
-  # stepwise prediction
-  BM    <- PLSrun$inner_mode$BM[1] + Scores[,1]*PLSrun$inner_mode$BM[2]
-  Rich  <- PLSrun$inner_mode$Rich[1] + Scores[,1]*PLSrun$inner_mode$Rich[2] + Scores[,2]*PLSrun$inner_mode$Rich[3]
-  Depth <- PLSrun$inner_mode$Depth[1] + Scores[,4]*PLSrun$inner_mode$Depth[5] + Scores[,5]*PLSrun$inner_mode$Depth[6]
-  C     <- PLSrun$inner_mode$C[1] + Scores[,1]*PLSrun$inner_mode$C[2] + Scores[,6]*PLSrun$inner_mode$C[7]
-  
-  # rescale LVs
-  BM.PRED <- nnorm(BM, rescaled.run$BM)
-  Rich.PRED <- nnorm(Rich, rescaled.run$Rich)
-  soil.PRED <- nnorm(Depth,rescaled.run$Depth)
-  C.PRED <- nnorm(C, rescaled.run$C)
-
-  # store the model accuracies
-  site[[i]] <- train$Uso
-  
-  BM.OBS <- nnorm(Scores[,4], train$Carbono_Aereo_total_kg_m2)
-  BM.obs[[i]] <- BM.OBS
-  BM.pred[[i]] <- BM.PRED
-  BM.r2[[i]]<-(cor(BM.PRED, BM.OBS, method="pearson"))^2
-  s1<-sqrt(mean((BM.OBS - BM.PRED)^2))
-  BM.rmse[[i]]<-s1
-  BM.Nrmse[[i]]<-(s1/(max(BM.OBS)-min(BM.OBS)))*100
-  lm = lm(BM.PRED ~ BM.OBS-1)
-  BM.bias[[i]] <-1-coef(lm)
-  
-  Rich.OBS <- nnorm(Scores[,5], train$Riqueza_Total)
-  Rich.obs[[i]] <- Rich.OBS
-  Rich.pred[[i]] <- Rich.PRED
-  Rich.r2[[i]]<-(cor(Rich.PRED, Rich.OBS, method="pearson"))^2
-  s1<-sqrt(mean((Rich.OBS - Rich.PRED)^2))
-  Rich.rmse[[i]]<-s1
-  Rich.Nrmse[[i]]<-(s1/(max(Rich.OBS)-min(Rich.OBS)))*100
-  lm = lm(Rich.PRED ~ Rich.OBS-1)
-  Rich.bias[[i]] <-1-coef(lm)
-  
-  soil.OBS <- nnorm(Scores[,6], train$depth)
-  soil.obs[[i]] <- soil.OBS
-  soil.pred[[i]] <- soil.PRED
-  soil.r2[[i]]<-(cor(soil.PRED, soil.OBS, method="pearson"))^2
-  s1<-sqrt(mean((soil.OBS - soil.PRED)^2))
-  soil.rmse[[i]]<-s1
-  soil.Nrmse[[i]]<-(s1/(max(soil.OBS)-min(soil.OBS)))*100
-  lm = lm(soil.PRED ~ soil.OBS-1)
-  soil.bias[[i]] <-1-coef(lm)
-  
-  C.OBS <- nnorm(Scores[,7], train$Carbono_Subterraneo_kg_m2)
-  C.obs[[i]] <- C.OBS
-  C.pred[[i]] <- C.PRED
-  C.r2[[i]]<-(cor(C.PRED, C.OBS, method="pearson"))^2
-  s1<-sqrt(mean((C.OBS - C.PRED)^2))
-  C.rmse[[i]]<-s1
-  C.Nrmse[[i]]<-(s1/(max(C.OBS)-min(C.OBS)))*100
-  lm = lm(C.PRED ~ C.OBS-1)
-  C.bias[[i]] <-1-coef(lm)
-    
-}
-
-summary(unlist(BM.r2))
-summary(unlist(Rich.r2))
-summary(unlist(soil.r2))
-summary(unlist(C.r2))
-
-summary(unlist(BM.Nrmse))
-summary(unlist(Rich.Nrmse))
-summary(unlist(soil.Nrmse))
-summary(unlist(C.Nrmse))
-
-pred.data <- data.frame(site=unlist(site), 
-                        pred.BM=unlist(BM.pred), obs.BM=unlist(BM.obs),
-                        pred.Rich=unlist(Rich.pred), obs.Rich=unlist(Rich.obs),
-                        pred.soil=unlist(soil.pred), obs.soil=unlist(soil.obs),
-                        pred.C=unlist(C.pred), obs.C=unlist(C.obs))
-
-plot(pred.BM ~ obs.BM, data=pred.data)
-abline(0,1)
-plot(pred.Rich ~ obs.Rich, data=pred.data)
-abline(0,1)
-plot(pred.soil ~ obs.soil, data=pred.data)
-abline(0,1)
-plot(pred.C ~ obs.C, data=pred.data)
-abline(0,1)
-
-
-###################################################
-### Fits PLSR directly using the RS information ###
-###################################################
-
-library(autopls)
-
-prepro <- function (X) # brightness normalization
-{
- X <- X / sqrt (rowSums (X ^ 2))         
- X
-}
-
-data2 <- data.frame(site=data$Uso, C=data$Carbono_Subterraneo_kg_m2, prepro( hyperData[,2:ncol(hyperData)] ), H=data$Altura_vegetacion_cm )
-
-## bootstrap
-
-# set the bootstrap parameters
-N = nrow(data2) # NÂ° of observations
-B = 100        # NÂ° of bootstrap iterations
-
-xobs <- list()
-xpred <- list()
-xcoef <- list()
-xr2 <- list()
-xNrmse <- list()
-xbias <- list()
-ncomp <- list()
-xsite <- list()
-
-for (i in 1:B) { 
-  
-  # create random numbers with replacement to select samples from each group
-  idx = sample(1:N, N, replace=TRUE)
-  
-  # select subsets of the five groups based on the random numbers
-  train <- data2[idx,]
-  
-  # observed 
-  obs <- train$C
-  
-  # underground C stock
-  fit <- autopls(C~., data=train[, 2:length(train)])
-  pred <- predicted(fit) 
-
-  # store values
-  xobs[[i]] <- obs
-  xpred[[i]] <- pred
-  xcoef[[i]] <- coef(fit)
-  xr2[[i]]<-(cor(pred, obs, method="pearson"))^2
-  s1<-sqrt(mean((obs-pred)^2))
-  xNrmse[[i]]<-(s1/(max(obs)-min(obs)))*100
-  lm1 = lm(pred ~ obs_1-1)
-  xbias[[i]] <-1-coef(lm1)
-  ncomp[[i]] <- summary(fit)$lv
-  xsite[[i]] <- train$site
-}
-
-summary( unlist(xr2) )
-summary( unlist(xNrmse) )
-summary( unlist(xbias) )
-summary( unlist(ncomp) )
-
-coeff <- apply( do.call("rbind", xcoef), 2, FUN = median )
-
-pred.PLSR <- data.frame(obs=unlist(xobs), pred=unlist(xpred), site=unlist(xsite))
-
-save.image("peatland.RData")
-
-## RF varImp
-fit <- randomForest(C ~., data=Scores_all, mtry=fitRF$bestTune$mtry, mtree=500, verbose=F)
-importance(fit)
 
