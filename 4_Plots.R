@@ -11,6 +11,9 @@
 ##                                                                            ##
 ################################################################################
 
+# load objects from memory
+memory <- "/media/javier/Elements/Peatland1/peatland.RData"
+load(memory)
 
 ################
 ### Figure 5 ###
@@ -206,7 +209,7 @@ dev.off()
 #########################################
 ### Random forest variable importance ###
 #########################################
-h
+
 svg(file = "Figures/VarImp_FC.svg", width=8, height=6)
 plot(varImp(fitRF_FC), top=20, main='Floristic composition')
 dev.off()
