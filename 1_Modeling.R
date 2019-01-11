@@ -2,38 +2,40 @@
 ################################################################################
 ## R-Script: 1_Modeling                                                       ##
 ## author: Javier Lopatin                                                     ##
-## mail: javierlopatin@gmail.com                                              ##  
+## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
 ## Manuscript: Mapping peatland belowground C stock using UAV-based vegetation##
 ## traits and structural equation modeling                                    ##
 ##                                                                            ##
 ## description: This R-code provide the Modeling appoach used in the          ##
-### manuscript                                                                ## 
+### manuscript                                                                ##
 ##                                                                            ##
 ################################################################################
 
 ##### set working directory
-setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
-memory <- "H:/Peatland1/peatland.RData"
-setwd("C:/your/folder")
+setwd("~/Dropbox/PhD/Peatland/New try")
+# directory to save the objects
+memory <- "/media/javier/Elements/Peatland1/peatland.RData"
+#setwd("C:/your/folder")
+# load objects from the ordination
 load("ordination.RData")
 
 ### Load data ####
-data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")   
+data <- read.table("data/Peatland1.csv", header=T, sep=",", dec=".")
 names(data)
-RSData <- read.table("D:/Peatland1/RSData.csv", header=T, sep=",", dec=".")[,2:80]   
+RSData <- read.table("D:/Peatland1/RSData.csv", header=T, sep=",", dec=".")[,2:80]
 names(RSData)
 RSData_BN <- read.table("D:/Peatland1/RSData_BN.csv", header=T, sep=",", dec=".")[,2:80]
 names(RSData_BN)
-MNF <- read.table("D:/Peatland1/MNFData.csv", header=T, sep=",", dec=".")[, 2:42]   
+MNF <- read.table("D:/Peatland1/MNFData.csv", header=T, sep=",", dec=".")[, 2:42]
 names(MNF)
-#MNF <- read.table("data/MNF.csv", header=T, sep=",", dec=".")[, 2:4]   
-#lidar <- read.table("data/PCloud_metrics.csv", header=T, sep=",", dec=".")[, 3:40] 
+#MNF <- read.table("data/MNF.csv", header=T, sep=",", dec=".")[, 2:4]
+#lidar <- read.table("data/PCloud_metrics.csv", header=T, sep=",", dec=".")[, 3:40]
 #spectra <- read.table("data/extract_mean.csv", header=T, sep=",", dec=".")[, 2:42]
 
 # load Floristic composition
-ordination <- read.table("data/ordination.csv", header=T, sep=",", dec=".") 
-PFT <- read.table("data/PFT.csv", header=T, sep=",", dec=".") 
+ordination <- read.table("data/ordination.csv", header=T, sep=",", dec=".")
+PFT <- read.table("data/PFT.csv", header=T, sep=",", dec=".")
 
 ### new variables
 data$gramm_cover <- data$Reeds_cover + data$Ferns_cover + data$Grasses_cover
@@ -136,11 +138,12 @@ train_control <- trainControl(method="LOOCV")
 
 # train model
 set.seed(123)
-fitRF <- train(C~., data=data2, trControl=train_control, tuneLength = 10, method="rf")
+fitRF <- train(C~., data=data2, trControl=train_control, tuneLength = 10,
+               method="rf", importance=T)
 fitRF
 
 # VarImport
-importance(fitRF)
+varImp(fitRF)
 
 ############################################################
 ### Check for autocorrelation in the PLS-PM construction ###
@@ -163,14 +166,14 @@ plspmRes <- function (m, Y = NULL)
     stop("\nSorry, REBUS only works with scaled='TRUE'")
   # test availibility of dataset (either Y or pls$data)
   test_dataset(Y, pls$data, pls$model$gens$obs)
-  
+
   # =======================================================
   # inputs setting
   # =======================================================
   IDM <- pls$model$IDM
   blocks <- pls$model$blocks
   blocklist = turner::indexify(blocks)
-  
+
   # data matrix DM
   if (!is.null(pls$data)) {
     DM = pls$data
@@ -185,7 +188,7 @@ plspmRes <- function (m, Y = NULL)
   mvs = pls$model$gen$mvs
   # apply the selected scaling
   X = get_data_scaled(DM, TRUE)
-  
+
   # =======================================================
   # computation of residuals
   # =======================================================
@@ -213,10 +216,10 @@ plspmRes <- function (m, Y = NULL)
     Y.hat = Y.lvs %*% Path[endo==1,]
   # inner residuals
   inner_residuals = Y.lvs[,endo==1] - Y.hat
-  
+
   out <- list (inner_residuals = inner_residuals, outer_residuals = outer_residuals)
   return (out)
-} 
+}
 
 residuals <- plspmRes(PLS)
 
@@ -225,32 +228,32 @@ xy <- data.frame( x=data$Coordenada_X_WGS84, y=data$Coordenada_Y_WGS84 )
 plot(xy)
 
 # distance matrix
-xy.dists <- as.matrix(dist(cbind(xy$x, xy$y))) 
+xy.dists <- as.matrix(dist(cbind(xy$x, xy$y)))
 xy.dists.inv <- 1/xy.dists # invers
 diag(xy.dists.inv) <- 0
 xy.dists.inv[1:5, 1:5] # check
 
-#### Aboveground biomass 
+#### Aboveground biomass
 moran.BM <- Moran.I(residuals$inner_residuals[,2], xy.dists.inv); moran.BM
-corr.BM <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,2], 
+corr.BM <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,2],
                    increment = 10, resamp = 500, quiet = T)
 plot(corr.BM); grid(); abline(0,0, lty=2)
 
 #### Species richness
 moran.Rich <- Moran.I(residuals$inner_residuals[,3], xy.dists.inv); moran.Rich
-corr.Rich <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,3], 
+corr.Rich <- correlog (xy[,1], xy[,2], z = residuals1$inner_residuals[,3],
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.Rich); grid(); abline(0,0, lty=2)
 
 #### Soil depht
 moran.soil <- Moran.I(residuals$inner_residuals[,4], xy.dists.inv); moran.soil
-corr.soil <- correlog (xy[,1], xy[,2], z = residuals$inner_residuals[,4], 
+corr.soil <- correlog (xy[,1], xy[,2], z = residuals$inner_residuals[,4],
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.soil); grid(); abline(0,0, lty=2)
 
-#### Belowground C stock 
+#### Belowground C stock
 moran.C <- Moran.I(residuals$inner_residuals[,5], xy.dists.inv); moran.C
-corr.C <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,5], 
+corr.C <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,5],
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.C); grid(); abline(0,0, lty=2)
 
@@ -304,10 +307,10 @@ RF.bias <- list()
 
 # Iteration
 for(i in 1:500){
-  
+
   # create random numbers with replacement to select samples from each group
   idx = sample(1:N, N, replace=TRUE)
-  
+
   # select subsets of the five groups based on the random numbers
   train1 <- data[idx,] # for PLSPM
   train2 <- data3[idx,] # for RF
@@ -316,7 +319,7 @@ for(i in 1:500){
 
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, inner, outer, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
+
   # model scores
   Scores <- as.data.frame(PLSrun$scores)
   #rescaled.run <- plspm::rescale(PLSrun)
@@ -329,20 +332,20 @@ for(i in 1:500){
   Depth.val <-nnorm(  val1[, 8] )
   C.val <-    nnorm( (val1[, 9]*PLSrun$outer_model$weight[9]) + (val1[, 10]*PLSrun$outer_model$weight[10]) + (val1[, 11]*PLSrun$outer_model$weight[11]) )
   valData <- data.frame(H=H.val, FC=FC.val, BM=BM.val, Rich=Rich.val, Depth=Depth.val, C=C.val)
-  
+
   # RF
   RFrun <- randomForest(C ~., data=train2, mtry=fitRF$bestTune$mtry, mtree=500, verbose=F)
-  
+
   ### Prediction to validation data
   # PLSPM (only significant path coefficients)
   predPLSPM <- PLSrun$inner_mode$C[1] + H.val*PLSrun$inner_mode$C[2] + (BM.val*PLSrun$inner_mode$C[3] + Rich.val*PLSrun$inner_mode$C[4])
   predRF <- predict(RFrun, val2, type="response" )
-  
+
   # store the model accuracies
   site[[i]] <- train$Uso
   obs = C.val
   Obs[[i]] <- obs
-  
+
   pred = predPLSPM
   PLSPM.pred[[i]] <- pred
   PLSPM.r2[[i]] <- (cor(pred, obs, method="pearson"))^2
@@ -351,7 +354,7 @@ for(i in 1:500){
   PLSPM.Nrmse[[i]]<- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
   PLSPM.bias[[i]] <- 1-coef(lm)
-  
+
   pred = predRF
   RF.pred[[i]] <- pred
   RF.r2[[i]] <- (cor(pred, obs, method="pearson"))^2
@@ -360,7 +363,7 @@ for(i in 1:500){
   RF.Nrmse[[i]] <- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
   RF.bias[[i]] <- 1-coef(lm)
-  
+
   print(i)
 }
 
@@ -386,13 +389,13 @@ colnames(MNF) = c( "MNF1", "MNF2", "MNF3", colnames(lidar) )
 rm(lidar)
 rm(spectra)
 
-RS_test_data <- data.frame(data$NNMDS.sp1, data$NMDS.PFT1, 
+RS_test_data <- data.frame(data$NNMDS.sp1, data$NMDS.PFT1,
                            data$Biomasa_herbaceas_kg_m2, data$Biomasa_arbustivas_kg_m2,
                            data$gramm_richness, data$Herb_richness, data$depth,
                            data$NCarbono_Subterraneo_kg_m2, data$Carbono_musgo_kg_m2, data$Carbono_R1_kg_m2,
                            MNF)
 
-RS_test_data2 <- data.frame(Scores_all, C=data$Carbono_Subterraneo_kg_m2, RSData_BN)
+RS_test_data2 <- data.frame(Scores_all, C=data$Carbono_Subterraneo_kg_m2, MNF)
 names(RS_test_data2)
 
 write.table(RSdata2, "data/RSdata.csv", sep=" ", col.names = T, row.names = F)
@@ -418,51 +421,56 @@ RS_test_data$NCanopy_relief_ratio = RS_test_data$Canopy_relief_ratio * -1
 
 ## FC
 outer_FC = list (c("MNF1", "MNF2", "MNF3"),
-              c("Elev_P25", "Elev_P50", "Elev_P75", "Elev_P90"),                           
+              c("Elev_P25", "Elev_P50", "Elev_P75", "Elev_P90"),
               c("Elev_stddev","Elev_L1","Elev_SQRT_mean_SQ","Elev_CURT_mean_CUBE"),
               c("data.NNMDS.sp1"))
 
-PLS_FC = plspm(RS_test_data, inner, outer_FC, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+PLS_FC = plspm(RS_test_data, inner, outer_FC, modes, maxiter= 1000, boot.val = F,
+  br = 1000, scheme = "factor", scaled = T)
 PLS_FC$outer
 PLS_FC$inner_summary
 
 ## BM
 outer_BM = list (c("MNF1","MNF2", "MNF3"),
-                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),                           
+                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),
                  c("Elev_skewness","Elev_L3","NCanopy_relief_ratio"),
                  c("data.Biomasa_herbaceas_kg_m2", "data.Biomasa_arbustivas_kg_m2"))
 
-PLS_BM = plspm(RS_test_data, inner, outer_BM, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+PLS_BM = plspm(RS_test_data, inner, outer_BM, modes, maxiter= 1000, boot.val = F,
+  br = 1000, scheme = "factor", scaled = T)
 PLS_BM$outer
 PLS_BM$inner_summary
 
 ## Richness
 outer_Rich = list (c("NMNF1", "MNF3"),
-                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),                           
+                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),
                  c("Elev_stddev","Elev_MAD_mode","Elev_L2","Elev_CURT_mean_CUBE"),
                  c("data.gramm_richness", "data.Herb_richness"))
 
-PLS_Rich = plspm(RS_test_data, inner, outer_Rich, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+PLS_Rich = plspm(RS_test_data, inner, outer_Rich, modes, maxiter= 1000, boot.val = F,
+  br = 1000, scheme = "factor", scaled = T)
 PLS_Rich$outer
 PLS_Rich$inner_summary
 
 ## Soil depth
 outer_depth = list (c("MNF1", "MNF2", "MNF3"),
-                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),                           
+                 c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),
                  c("Elev_stddev","Elev_L1","Elev_SQRT_mean_SQ","Elev_CURT_mean_CUBE"),
                  c("data.depth"))
 
-PLS_depth = plspm(RS_test_data, inner, outer_depth, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+PLS_depth = plspm(RS_test_data, inner, outer_depth, modes, maxiter= 1000, boot.val = F,
+  br = 1000, scheme = "factor", scaled = T)
 PLS_depth$outer
 PLS_depth$inner_summary
 
 ## C
 outer_C = list (c("MNF1", "MNF2", "MNF3"),
-                    c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),                           
+                    c("Elev_P25","Elev_P50","Elev_P75","Elev_P90"),
                     c("Elev_stddev","Elev_L1","Elev_SQRT_mean_SQ","Elev_CURT_mean_CUBE"),
                     c("data.NCarbono_Subterraneo_kg_m2", "data.Carbono_musgo_kg_m2", "data.Carbono_R1_kg_m2"))
 
-PLS_C = plspm(RS_test_data, inner, outer_C, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
+PLS_C = plspm(RS_test_data, inner, outer_C, modes, maxiter= 1000, boot.val = F,
+  br = 1000, scheme = "factor", scaled = T)
 PLS_C$outer
 PLS_C$inner_summary
 
@@ -472,28 +480,34 @@ PLS_C$inner_summary
 
 ### FC
 set.seed(123)
-fitRF_FC <- train(FC ~., data=RS_test_data2[, c(2, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
+fitRF_FC <- train(FC ~., data=RS_test_data2[, c(2, 8:ncol(RS_test_data2))],
+                  trControl=train_control, tuneLength = 10, method="rf",  importance = T)
 fitRF_FC
 
 ### BM
 set.seed(123)
-fitRF_BM <- train(BM ~., data=RS_test_data2[, c(3, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
+fitRF_BM <- train(BM ~., data=RS_test_data2[, c(3, 8:ncol(RS_test_data2))],
+                  trControl=train_control, tuneLength = 10, method="rf", importance = T)
 fitRF_BM
 
 ### Richness
 set.seed(123)
-fitRF_Rich <- train(Rich ~., data=RS_test_data2[, c(4, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
+fitRF_Rich <- train(Rich ~., data=RS_test_data2[, c(4, 8:ncol(RS_test_data2))],
+                    trControl=train_control, tuneLength = 10, method="rf", importance = T)
 fitRF_Rich
 
 ### Soil depth
 set.seed(123)
-fitRF_depth <- train(Depth ~., data=RS_test_data2[, c(5, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
+fitRF_depth <- train(Depth ~., data=RS_test_data2[, c(5, 8:ncol(RS_test_data2))],
+                     trControl=train_control, tuneLength = 10, method="rf", importance = T)
 fitRF_depth
 
 ### C
 set.seed(123)
-fitRF_C<- train(C ~., data=RS_test_data2[, c(6, 8:ncol(RS_test_data2))],  trControl=train_control, tuneLength = 10, method="rf")
+fitRF_C <- train(C ~., data=RS_test_data2[, c(6, 8:ncol(RS_test_data2))],
+                trControl=train_control, tuneLength = 10, method="rf", importance = T)
 fitRF_depth
+
 
 ################################
 ### Bootstrapping validation ###
@@ -569,36 +583,36 @@ RF.Nrmse_C<- list()
 RF.bias_C<- list()
 
 for(i in 1:500){
-  
+
   # create random numbers with replacement to select samples from each group
   idx = sample(1:N, N, replace=TRUE)
-  
+
   # select subsets of the five groups based on the random numbers
   train1 <- RS_test_data[idx,]  # for PLS-PM
   train2 <- RS_test_data2[idx,] # for the rest
-  
+
   val1 <- RS_test_data[-idx, ]  # for PLS-PM
   val2 <- RS_test_data2[-idx, ] # for the rest
-  
-  ### Run PLSPM 
+
+  ### Run PLSPM
   PLSrun_FC = plspm(train1, inner, outer_FC, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_BM = plspm(train1, inner, outer_BM, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_Rich = plspm(train1, inner, outer_Rich, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_Depth = plspm(train1, inner, outer_depth, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_C = plspm(train1, inner, outer_C, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
+
   Scores_FC <- as.data.frame(PLSrun_FC$scores)
   Scores_BM <- as.data.frame(PLSrun_BM$scores)
   Scores_Rich <- as.data.frame(PLSrun_Rich$scores)
   Scores_Depth <- as.data.frame(PLSrun_Depth$scores)
   Scores_C <- as.data.frame(PLSrun_Depth$scores)
-  
+
   ### create validation data for PLS-PM
   #FC
   Spec_FC      <- nnorm( (val1$MNF1*PLSrun_FC$outer_model$weight[1])+(val1$MNF2*PLSrun_FC$outer_model$weight[2])+(val1$MNF3*PLSrun_FC$outer_model$weight[3]) )
   Height_FC    <- nnorm( (val1$Elev_P25*PLSrun_FC$outer_model$weight[4])+(val1$Elev_P50*PLSrun_FC$outer_model$weight[5])+(val1$Elev_P75*PLSrun_FC$outer_model$weight[6])+(val1$Elev_P90*PLSrun_FC$outer_model$weight[7]) )
   Structure_FC <- nnorm( (val1$Elev_stddev*PLSrun_FC$outer_model$weight[8])+(val1$Elev_L1*PLSrun_FC$outer_model$weight[9])+(val1$Elev_SQRT_mean_SQ*PLSrun_FC$outer_model$weight[10])+(val1$Elev_CURT_mean_CUBE*PLSrun_FC$outer_model$weight[11]) )
-  FCData <- data.frame(Spec=Spec_FC, Height=Height_FC, Structure=Structure_FC, FC=val1$data.NNMDS.sp1) 
+  FCData <- data.frame(Spec=Spec_FC, Height=Height_FC, Structure=Structure_FC, FC=val1$data.NNMDS.sp1)
   #BM
   Spec_BM      <- nnorm( (val1$MNF1*PLSrun_BM$outer_model$weight[1])+(val1$MNF2*PLSrun_BM$outer_model$weight[2])+(val1$MNF3*PLSrun_BM$outer_model$weight[3]) )
   Height_BM    <- nnorm( (val1$Elev_P25*PLSrun_BM$outer_model$weight[4])+(val1$Elev_P50*PLSrun_BM$outer_model$weight[5])+(val1$Elev_P75*PLSrun_BM$outer_model$weight[6])+(val1$Elev_P90*PLSrun_BM$outer_model$weight[7]) )
@@ -622,19 +636,19 @@ for(i in 1:500){
   Structure_C <- nnorm( (val1$Elev_stddev*PLSrun_C$outer_model$weight[8])+(val1$Elev_L1*PLSrun_C$outer_model$weight[9])+(val1$Elev_SQRT_mean_SQ*PLSrun_C$outer_model$weight[10])+(val1$Elev_CURT_mean_CUBE*PLSrun_C$outer_model$weight[11]) )
   X_C         <- nnorm( (val1$data.NCarbono_Subterraneo_kg_m2*PLSrun_C$outer_model$weight[12])+(val1$data.Carbono_musgo_kg_m2*PLSrun_C$outer_model$weight[13])+(val1$data.Carbono_R1_kg_m2*PLSrun_C$outer_model$weight[14]) )
   CData <- data.frame(Spec=Spec_C, Height=Height_C, Structure=Structure_C, C=val1$data.depth)
-  
+
   ############################
   #### train RF ####
   ############################
-  
+
   RFrun_FC <- randomForest(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], mtry=fitRF_FC$bestTune$mtry, mtree=500, verbose=F)
   RFrun_BM <- randomForest(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], mtry=fitRF_BM$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Rich <- randomForest(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], mtry=fitRF_Rich$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Depth <- randomForest(Depth ~., data=train2[, c(5, 8:ncol(RSdata2))], mtry=fitRF_depth$bestTune$mtry, mtree=500, verbose=F)
   RFrun_C <- randomForest(C ~., data=train2[, c(6, 8:ncol(RSdata2))], mtry=fitRF_C$bestTune$mtry, mtree=500, verbose=F)
-  
+
   ### Prediction to validation data
-  # PLSPM 
+  # PLSPM
   predPLSPM_FC    <- PLSrun_FC$inner_model$X[1] + Spec_FC*PLSrun_FC$inner_model$X[2] + Height_FC*PLSrun_FC$inner_model$X[3] + Structure_FC*PLSrun_FC$inner_model$X[4]
   predPLSPM_BM    <- PLSrun_BM$inner_model$X[1] + Spec_BM*PLSrun_BM$inner_model$X[2] + Height_BM*PLSrun_BM$inner_model$X[3] + Structure_BM*PLSrun_BM$inner_model$X[4]
   predPLSPM_Rich  <- PLSrun_Rich$inner_model$X[1] + Spec_Rich*PLSrun_Rich$inner_model$X[2] + Height_Rich*PLSrun_Rich$inner_model$X[3] + Structure_Rich*PLSrun_Rich$inner_model$X[4]
@@ -647,11 +661,11 @@ for(i in 1:500){
   predRF_Rich <- predict(RFrun_Rich, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_Depth <- predict(RFrun_Depth, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_C <- predict(RFrun_C, val2[, 8:ncol(RSdata2)], type="response" )
- 
+
   # store the model accuracies
   site[[i]] <- data$Uso[idx]
   H_val[[i]] <- Height_C
- 
+
    #### PLS-PM
   # FC
   obs = Scores_FC$X
@@ -708,7 +722,7 @@ for(i in 1:500){
   PLSPM.Nrmse_C[[i]]<- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
   PLSPM.bias_C[[i]] <- 1-coef(lm)
-  
+
   #### RF
   # FC
   obs = val2$FC
@@ -749,7 +763,7 @@ for(i in 1:500){
   RF.rmse_depth[[i]] <- s1
   RF.Nrmse_depth[[i]]<- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
-  RF.bias_depth[[i]] <- 1-coef(lm) 
+  RF.bias_depth[[i]] <- 1-coef(lm)
   # C
   obs = val2$C
   pred = predRF_C
@@ -759,25 +773,24 @@ for(i in 1:500){
   RF.rmse_C[[i]] <- s1
   RF.Nrmse_C[[i]]<- (s1/(max(obs)-min(obs)))*100
   lm = lm(pred ~ obs-1)
-  RF.bias_C[[i]] <- 1-coef(lm) 
+  RF.bias_C[[i]] <- 1-coef(lm)
 
   print(i)
 }
 
 median(unlist(PLSPM.r2_FC)); median(unlist(PLSPM.Nrmse_FC)); median(unlist(PLSPM.bias_FC))
-median(unlist(RF.r2_FC)); median(unlist(RF.Nrmse_FC));median(unlist(RF.bias_FC)) 
+median(unlist(RF.r2_FC)); median(unlist(RF.Nrmse_FC));median(unlist(RF.bias_FC))
 
 median(unlist(PLSPM.r2_BM)); median(unlist(PLSPM.Nrmse_BM)); median(unlist(PLSPM.bias_BM))
-median(unlist(RF.r2_BM)); median(unlist(RF.Nrmse_BM));median(unlist(RF.bias_BM)) 
+median(unlist(RF.r2_BM)); median(unlist(RF.Nrmse_BM));median(unlist(RF.bias_BM))
 
 median(unlist(PLSPM.r2_Rich)); median(unlist(PLSPM.Nrmse_Rich)); median(unlist(PLSPM.bias_Rich))
-median(unlist(RF.r2_Rich)); median(unlist(RF.Nrmse_Rich));median(unlist(RF.bias_Rich)) 
+median(unlist(RF.r2_Rich)); median(unlist(RF.Nrmse_Rich));median(unlist(RF.bias_Rich))
 
 median(unlist(PLSPM.r2_depth)); median(unlist(PLSPM.Nrmse_depth)); median(unlist(PLSPM.bias_depth))
-median(unlist(RF.r2_depth)); median(unlist(RF.Nrmse_depth));median(unlist(RF.bias_depth)) 
+median(unlist(RF.r2_depth)); median(unlist(RF.Nrmse_depth));median(unlist(RF.bias_depth))
 
 median(na.omit(unlist(PLSPM.r2_C))); median(unlist(PLSPM.Nrmse_C)); median(unlist(PLSPM.bias_C))
-median(na.omit(unlist(RF.r2_C))); median(unlist(RF.Nrmse_C));median(unlist(RF.bias_C)) 
+median(na.omit(unlist(RF.r2_C))); median(unlist(RF.Nrmse_C));median(unlist(RF.bias_C))
 
 save.image("peatland.RData")
-
