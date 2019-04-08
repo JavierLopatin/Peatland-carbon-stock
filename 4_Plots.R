@@ -4,10 +4,10 @@
 ## author: Javier Lopatin                                                     ##
 ## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
-## Manuscript: Combining ecological knowledge and remote sensing through      ##
-## structural equation modeling: A case study for peatland carbon assessments ##
+## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
+## peatland belowground carbon stock                                          ##
 ##                                                                            ##
-## description: Create the paper plots                                        ##
+## description: Plot results                                                  ##
 ##                                                                            ##
 ################################################################################
 
