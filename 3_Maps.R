@@ -2,17 +2,22 @@
 ################################################################################
 ## R-Script: 2_Maps.R                                                         ##
 ## author: Javier Lopatin                                                     ##
-## mail: javierlopatin@gmail.com                                              ##  
+## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
-## Manuscript: Combining ecological knowledge and remote sensing through      ##
-## structural equation modeling: A case study for peatland carbon assessments ##
+## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
+## peatland belowground carbon stock                                          ##
 ##                                                                            ##
-## description: Create the prediction maps                                    ## 
+## description: Create the prediction maps                                    ##
 ##                                                                            ##
 ################################################################################
 
 library(randomForest)
 library(caret)
+library(doParallel)
+
+#############################################################
+### Spatial predicitons of aboveground vegetation attributes
+#############################################################
 
 ## leave-one-out cross validation
 train_control <- trainControl(method="LOOCV")
@@ -20,7 +25,9 @@ train_control <- trainControl(method="LOOCV")
 saveRasters = "D:/Peatland1/rasters.RData"
 #load(saveRasters)
 
-#### prediction with remote sensing data
+#############################################################
+### prediction with remote sensing data and Random Forest
+
 # species ordination
 m1data <- data.frame(x = data$NNMDS.sp1, H=data$Altura_vegetacion_cm, hyperData[,2:ncol(hyperData)])
 m1 <- train(x ~., data=m1data, trControl=train_control, tuneLength = 10, method="rf")
@@ -37,8 +44,7 @@ names(DCM) <- "H"
 
 DCM2 <- resample(DCM2, hypr, resample='bilinear')
 r <- stack(DCM2, hyper)
-r[r$H > 2] <- NA # height mask
-r[r$H < 0] <- NA
+r[r$H > 2] <- NA; r[r$H < 0] <- NA # height mask
 plot(r[[2]])
 
 ### create NDVI mask
@@ -46,8 +52,7 @@ NDVI <- ( hyper[[30]] - hyper[[20]] ) / ( hyper[[30]] + hyper[[20]] )
 #NDVI <- mask(NDVI, DCM2) # exclude trees
 NDVI[NDVI<0.3] <- NA
 plot(NDVI)
-r <- mask(r, NDVI)
-r <- mask(r, lim)
+r <- mask(r, NDVI); r <- mask(r, lim)
 plot(r[[1]])
 
 # spp
@@ -84,6 +89,7 @@ Spec_C      <- nnorm( (RS1$MNF1*PLS_C$outer_model$weight[1])+(RS1$MNF2*PLS_C$out
 Height_C    <- nnorm( (RS1$Elev_P25*PLS_C$outer_model$weight[4])+(RS1$Elev_P50*PLS_C$outer_model$weight[5])+(RS1$Elev_P75*PLS_C$outer_model$weight[6])+(RS1$Elev_P90*PLS_C$outer_model$weight[7]) )
 Structure_C <- nnorm( (RS1$Elev_stddev*PLS_C$outer_model$weight[8])+(RS1$Elev_L1*PLS_C$outer_model$weight[9])+(RS1$Elev_SQRT_mean_SQ*PLS_C$outer_model$weight[10])+(RS1$Elev_CURT_mean_CUBE*PLS_C$outer_model$weight[11]) )
 
+#####################
 #### start loop
 
 # lists to store maps
@@ -116,39 +122,39 @@ cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 
 for(i in 1:500){
-  
+
   # create random numbers with replacement to select samples from each group
   idx = sample(1:N, N, replace=TRUE)
-  
+
   # select subsets of the five groups based on the random numbers
   train1 <- RS_test_data[idx,]  # for PLS-PM
   train2 <- RS_test_data2[idx,] # for the rest
 
-  ### Run PLSPM 
+  ### Run PLSPM
   PLSrun_FC = plspm(train1, inner, outer_FC, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_BM = plspm(train1, inner, outer_BM, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_Rich = plspm(train1, inner, outer_Rich, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_Depth = plspm(train1, inner, outer_depth, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
   PLSrun_C = plspm(train1, inner, outer_C, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
+
   Scores_FC <- as.data.frame(PLSrun_FC$scores)
   Scores_BM <- as.data.frame(PLSrun_BM$scores)
   Scores_Rich <- as.data.frame(PLSrun_Rich$scores)
   Scores_Depth <- as.data.frame(PLSrun_Depth$scores)
   Scores_C <- as.data.frame(PLSrun_Depth$scores)
-  
+
   ##################
   #### train RF ####
   ##################
- 
+
   RFrun_FC    <- randomForest(FC ~., data=train2[, c(2, 8:ncol(train2))], mtry=fitRF_FC$bestTune$mtry, mtree=500, verbose=F)
   RFrun_BM    <- randomForest(BM ~., data=train2[, c(3, 8:ncol(train2))], mtry=fitRF_BM$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Rich  <- randomForest(Rich ~., data=train2[, c(4, 8:ncol(train2))], mtry=fitRF_Rich$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Depth <- randomForest(Depth ~., data=train2[, c(5, 8:ncol(train2))], mtry=fitRF_depth$bestTune$mtry, mtree=500, verbose=F)
   RFrun_C     <- randomForest(C ~., data=train2[, c(6, 8:ncol(train2))], mtry=fitRF_C$bestTune$mtry, mtree=500, verbose=F)
-    
+
   ### Prediction to validation data
-  # PLSPM 
+  # PLSPM
   predPLSPM_FC    <- PLSrun_FC$inner_model$X[1]    + Spec_FC*PLSrun_FC$inner_model$X[2]       + Height_FC*PLSrun_FC$inner_model$X[3]       + Structure_FC*PLSrun_FC$inner_model$X[4]
   predPLSPM_BM    <- PLSrun_BM$inner_model$X[1]    + Spec_BM*PLSrun_BM$inner_model$X[2]       + Height_BM*PLSrun_BM$inner_model$X[3]       + Structure_BM*PLSrun_BM$inner_model$X[4]
   predPLSPM_Rich  <- PLSrun_Rich$inner_model$X[1]  + Spec_Rich*PLSrun_Rich$inner_model$X[2]   + Height_Rich*PLSrun_Rich$inner_model$X[3]   + Structure_Rich*PLSrun_Rich$inner_model$X[4]
@@ -161,38 +167,38 @@ for(i in 1:500){
   predRF_Rich  <- predict(RS2, RFrun_Rich)
   predRF_Depth <- predict(RS2, RFrun_Depth)
   predRF_C     <- predict(RS2, RFrun_C)
-   
+
   ### store maps
   PLSPM_FC_map[[i]]    <- Cnorm(predPLSPM_FC)
   PLSPM_BM_map[[i]]    <- Cnorm(predPLSPM_BM)
   PLSPM_Rich_map[[i]]  <- Cnorm(predPLSPM_Rich)
   PLSPM_Depth_map[[i]] <- Cnorm(predPLSPM_Depth)
   PLSPM_C_map[[i]]     <- Cnorm(predPLSPM_C)
-  
+
   RF_FC_map[[i]]    <- Cnorm(predRF_FC)
   RF_BM_map[[i]]    <- Cnorm(predRF_BM)
   RF_Rich_map[[i]]  <- Cnorm(predRF_Rich)
   RF_Depth_map[[i]] <- Cnorm(predRF_Depth)
   RF_C_map[[i]]     <- Cnorm(predRF_C)
-  
+
   print(i)
 }
 
 # stop parallel process
-stopCluster(cl) 
+stopCluster(cl)
 
 ## prepare maps
-PLSPM_FC_stack    <- stack(PLSPM_FC_map) 
-PLSPM_BM_stack    <- stack( PLSPM_BM_map) 
-PLSPM_Rich_stack  <- stack(PLSPM_Rich_map) 
-PLSPM_Depth_stack <- stack(PLSPM_Depth_map)  
-PLSPM_C_stack     <- stack(PLSPM_C_map) 
+PLSPM_FC_stack    <- stack(PLSPM_FC_map)
+PLSPM_BM_stack    <- stack( PLSPM_BM_map)
+PLSPM_Rich_stack  <- stack(PLSPM_Rich_map)
+PLSPM_Depth_stack <- stack(PLSPM_Depth_map)
+PLSPM_C_stack     <- stack(PLSPM_C_map)
 
-RF_FC_stack    <- stack(RF_FC_map)  
-RF_BM_stack    <- stack(RF_BM_map) 
-RF_Rich_stack  <- stack(RF_Rich_map)  
-RF_Depth_stack <- stack(RF_Depth_map)  
-RF_C_stack     <- stack(RF_C_map) 
+RF_FC_stack    <- stack(RF_FC_map)
+RF_BM_stack    <- stack(RF_BM_map)
+RF_Rich_stack  <- stack(RF_Rich_map)
+RF_Depth_stack <- stack(RF_Depth_map)
+RF_C_stack     <- stack(RF_C_map)
 
 # median maps
 PLSPM_FC_stack_median    <- calc(PLSPM_FC_stack, median)
@@ -225,11 +231,11 @@ save.image(saveRasters)
 ##################################################
 ### Hybrid model estimation using PLSPM and RF ###
 ##################################################
-r <- list() 
+r <- list()
 for (i in 1:500){
   # create random numbers with replacement to select samples from each group
   idx = sample(1:N, N, replace=TRUE)
-  
+
   # select subsets of the five groups based on the random numbers
   train1 <- data[idx,] # for PLSPM
   train2 <- data3[idx,] # for RF
@@ -238,7 +244,7 @@ for (i in 1:500){
 
   ### Run PLSPM for aboveground C stock
   PLSrun = plspm(train, inner, outer, modes, maxiter= 1000, boot.val = F, br = 1000, scheme = "factor", scaled = T)
-  
+
   # model scores
   Scores <- as.data.frame(PLSrun$scores)
   #rescaled.run <- plspm::rescale(PLSrun)
@@ -254,4 +260,3 @@ C_stack_indirect <- stack(r)
 C_indirect_median <- calc(C_stack_indirect, median)
 C_indirect_cv <- calc(C_stack_indirect, sd)/mean(data$Carbono_Subterraneo_kg_m2)
 plot(C_indirect_cv)
-

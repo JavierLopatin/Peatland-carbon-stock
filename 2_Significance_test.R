@@ -2,12 +2,12 @@
 ################################################################################
 ## R-Script: Significance analysis                                            ##
 ## author: Javier Lopatin                                                     ##
-## mail: javierlopatin@gmail.com                                              ##  
+## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
-## Manuscript: Mapping peatland belowground C stock using UAV-based vegetation##
-## traits and structural equation modeling                                    ##
+## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
+## peatland belowground carbon stock                                          ##
 ##                                                                            ##
-## description: One-sided bootstrapping significance analysis                 ##   
+## description: One-sided bootstrapping significance analysis                 ##
 ##                                                                            ##
 ################################################################################
 
@@ -15,7 +15,8 @@ setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 
 load("peatland.RData")
 
-# function 
+##########################
+# function to estimate significant differences between bootstrap pairs
 significanceTest <- function(model1, model2){
   ### r²
   r2 <- model1[[1]] - model2[[1]]

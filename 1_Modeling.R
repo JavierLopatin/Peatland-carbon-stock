@@ -4,11 +4,11 @@
 ## author: Javier Lopatin                                                     ##
 ## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
-## Manuscript: Mapping peatland belowground C stock using UAV-based vegetation##
-## traits and structural equation modeling                                    ##
+## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
+## peatland belowground carbon stock                                          ##
 ##                                                                            ##
 ## description: This R-code provide the Modeling appoach used in the          ##
-### manuscript                                                                ##
+## manuscript                                                                 ##
 ##                                                                            ##
 ################################################################################
 
@@ -149,10 +149,10 @@ varImp(fitRF)
 ### Check for autocorrelation in the PLS-PM construction ###
 ############################################################
 
-library (ncf) # correlogram
-library(ape)  # MoranÂ´s I
+library(ncf) # correlogram
+library(ape)  # Moran´s I
 
-## function to obtain the residualds from the outer and inner model
+## function to obtain the residualds from the outer and inner PLS-PM model
 plspmRes <- function (m, Y = NULL)
 {
   pls <- m
@@ -221,17 +221,22 @@ plspmRes <- function (m, Y = NULL)
   return (out)
 }
 
+# Get residuals from PLS-PM model
 residuals <- plspmRes(PLS)
 
 # get the plot coordinates
 xy <- data.frame( x=data$Coordenada_X_WGS84, y=data$Coordenada_Y_WGS84 )
 plot(xy)
 
-# distance matrix
+# obtain distance matrix of XY coordinates
 xy.dists <- as.matrix(dist(cbind(xy$x, xy$y)))
 xy.dists.inv <- 1/xy.dists # invers
 diag(xy.dists.inv) <- 0
 xy.dists.inv[1:5, 1:5] # check
+
+#####################
+### Moran's Index ###
+#####################
 
 #### Aboveground biomass
 moran.BM <- Moran.I(residuals$inner_residuals[,2], xy.dists.inv); moran.BM
@@ -257,8 +262,12 @@ corr.C <- correlog (xy[,1], xy[,2], z = residuals2$inner_residuals[,5],
                   increment = 10, resamp = 500, quiet = T)
 plot(corr.C); grid(); abline(0,0, lty=2)
 
+################################################################################
+### END TEST OF SPATIAL-AUTOCORRELATION
+################################################################################
 
-# rescaling scores. So the LV have the same scale than the manifest variables
+
+# rescaling scores, so the LV have the same scale than the manifest variables
 rescaled.scores = plspm::rescale(PLS)
 
 # Pairs plot
@@ -325,13 +334,13 @@ for(i in 1:500){
   #rescaled.run <- plspm::rescale(PLSrun)
   PLSrun$outer_model
   # create validation data from outer model loadings
-  H.val <-    nnorm( val1[, 1] )
-  FC.val <-   nnorm( (val1[, 2]*PLSrun$outer_model$weight[2]) + (val1[, 3]*PLSrun$outer_model$weight[3]) )
-  BM.val <-   nnorm( (val1[, 4]*PLSrun$outer_model$weight[4]) + (val1[, 5]*PLSrun$outer_model$weight[5]) )
-  Rich.val <- nnorm( (val1[, 6]*PLSrun$outer_model$weight[6]) + (val1[, 7]*PLSrun$outer_model$weight[7]) )
-  Depth.val <-nnorm(  val1[, 8] )
-  C.val <-    nnorm( (val1[, 9]*PLSrun$outer_model$weight[9]) + (val1[, 10]*PLSrun$outer_model$weight[10]) + (val1[, 11]*PLSrun$outer_model$weight[11]) )
-  valData <- data.frame(H=H.val, FC=FC.val, BM=BM.val, Rich=Rich.val, Depth=Depth.val, C=C.val)
+  H.val     <- nnorm( val1[, 1] )
+  FC.val    <- nnorm( (val1[, 2]*PLSrun$outer_model$weight[2]) + (val1[, 3]*PLSrun$outer_model$weight[3]) )
+  BM.val    <- nnorm( (val1[, 4]*PLSrun$outer_model$weight[4]) + (val1[, 5]*PLSrun$outer_model$weight[5]) )
+  Rich.val  <- nnorm( (val1[, 6]*PLSrun$outer_model$weight[6]) + (val1[, 7]*PLSrun$outer_model$weight[7]) )
+  Depth.val <- nnorm(  val1[, 8] )
+  C.val     <- nnorm( (val1[, 9]*PLSrun$outer_model$weight[9]) + (val1[, 10]*PLSrun$outer_model$weight[10]) + (val1[, 11]*PLSrun$outer_model$weight[11]) )
+  valData   <- data.frame(H=H.val, FC=FC.val, BM=BM.val, Rich=Rich.val, Depth=Depth.val, C=C.val)
 
   # RF
   RFrun <- randomForest(C ~., data=train2, mtry=fitRF$bestTune$mtry, mtree=500, verbose=F)
@@ -612,40 +621,40 @@ for(i in 1:500){
   Spec_FC      <- nnorm( (val1$MNF1*PLSrun_FC$outer_model$weight[1])+(val1$MNF2*PLSrun_FC$outer_model$weight[2])+(val1$MNF3*PLSrun_FC$outer_model$weight[3]) )
   Height_FC    <- nnorm( (val1$Elev_P25*PLSrun_FC$outer_model$weight[4])+(val1$Elev_P50*PLSrun_FC$outer_model$weight[5])+(val1$Elev_P75*PLSrun_FC$outer_model$weight[6])+(val1$Elev_P90*PLSrun_FC$outer_model$weight[7]) )
   Structure_FC <- nnorm( (val1$Elev_stddev*PLSrun_FC$outer_model$weight[8])+(val1$Elev_L1*PLSrun_FC$outer_model$weight[9])+(val1$Elev_SQRT_mean_SQ*PLSrun_FC$outer_model$weight[10])+(val1$Elev_CURT_mean_CUBE*PLSrun_FC$outer_model$weight[11]) )
-  FCData <- data.frame(Spec=Spec_FC, Height=Height_FC, Structure=Structure_FC, FC=val1$data.NNMDS.sp1)
+  FCData       <- data.frame(Spec=Spec_FC, Height=Height_FC, Structure=Structure_FC, FC=val1$data.NNMDS.sp1)
   #BM
   Spec_BM      <- nnorm( (val1$MNF1*PLSrun_BM$outer_model$weight[1])+(val1$MNF2*PLSrun_BM$outer_model$weight[2])+(val1$MNF3*PLSrun_BM$outer_model$weight[3]) )
   Height_BM    <- nnorm( (val1$Elev_P25*PLSrun_BM$outer_model$weight[4])+(val1$Elev_P50*PLSrun_BM$outer_model$weight[5])+(val1$Elev_P75*PLSrun_BM$outer_model$weight[6])+(val1$Elev_P90*PLSrun_BM$outer_model$weight[7]) )
   Structure_BM <- nnorm( (val1$Elev_skewness*PLSrun_BM$outer_model$weight[8])+(val1$Elev_L3*PLSrun_BM$outer_model$weight[9])+(val1$NCanopy_relief_ratio*PLSrun_BM$outer_model$weight[10]) )
   X_BM         <- nnorm( (val1$data.Biomasa_herbaceas_kg_m2*PLSrun_BM$outer_model$weight[11])+(val1$data.Biomasa_arbustivas_kg_m2*PLSrun_BM$outer_model$weight[12]) )
-  BMData <- data.frame(Spec=Spec_BM, Height=Height_BM, Structure=Structure_BM, BM=X_BM)
+  BMData       <- data.frame(Spec=Spec_BM, Height=Height_BM, Structure=Structure_BM, BM=X_BM)
   #Rich
   Spec_Rich      <- nnorm( (val1$NMNF1*PLSrun_Rich$outer_model$weight[1])+(val1$MNF3*PLSrun_Rich$outer_model$weight[2]) )
   Height_Rich    <- nnorm( (val1$Elev_P25*PLSrun_Rich$outer_model$weight[3])+(val1$Elev_P50*PLSrun_Rich$outer_model$weight[4])+(val1$Elev_P75*PLSrun_Rich$outer_model$weight[5])+(val1$Elev_P90*PLSrun_Rich$outer_model$weight[6]) )
   Structure_Rich <- nnorm( (val1$Elev_stddev*PLSrun_Rich$outer_model$weight[7])+(val1$Elev_MAD_mode*PLSrun_Rich$outer_model$weight[8])+(val1$Elev_L2*PLSrun_Rich$outer_model$weight[9])+(val1$Elev_CURT_mean_CUBE*PLSrun_Rich$outer_model$weight[11]) )
   X_Rich         <- nnorm( (val1$data.gramm_richness*PLSrun_Rich$outer_model$weight[11])+(val1$data.Herb_richness*PLSrun_Rich$outer_model$weight[12]) )
-  RichData <- data.frame(Spec=Spec_Rich, Height=Height_Rich, Structure=Structure_Rich, Rich=X_Rich)
+  RichData       <- data.frame(Spec=Spec_Rich, Height=Height_Rich, Structure=Structure_Rich, Rich=X_Rich)
   #Depth
   Spec_Depth      <- nnorm( (val1$MNF1*PLSrun_Depth$outer_model$weight[1])+(val1$MNF2*PLSrun_Depth$outer_model$weight[2])+(val1$MNF3*PLSrun_Depth$outer_model$weight[3]) )
   Height_Depth    <- nnorm( (val1$Elev_P25*PLSrun_Depth$outer_model$weight[4])+(val1$Elev_P50*PLSrun_Depth$outer_model$weight[5])+(val1$Elev_P75*PLSrun_Depth$outer_model$weight[6])+(val1$Elev_P90*PLSrun_Depth$outer_model$weight[7]) )
   Structure_Depth <- nnorm( (val1$Elev_stddev*PLSrun_Depth$outer_model$weight[8])+(val1$Elev_L1*PLSrun_Depth$outer_model$weight[9])+(val1$Elev_SQRT_mean_SQ*PLSrun_Depth$outer_model$weight[10])+(val1$Elev_CURT_mean_CUBE*PLSrun_Depth$outer_model$weight[11]) )
-  DepthData <- data.frame(Spec=Spec_Depth, Height=Height_Depth, Structure=Structure_Depth, Depth=val1$data.depth)
+  DepthData       <- data.frame(Spec=Spec_Depth, Height=Height_Depth, Structure=Structure_Depth, Depth=val1$data.depth)
   #C
   Spec_C      <- nnorm( (val1$MNF1*PLSrun_C$outer_model$weight[1])+(val1$MNF2*PLSrun_C$outer_model$weight[2])+(val1$MNF3*PLSrun_C$outer_model$weight[3]) )
   Height_C    <- nnorm( (val1$Elev_P25*PLSrun_C$outer_model$weight[4])+(val1$Elev_P50*PLSrun_C$outer_model$weight[5])+(val1$Elev_P75*PLSrun_C$outer_model$weight[6])+(val1$Elev_P90*PLSrun_C$outer_model$weight[7]) )
   Structure_C <- nnorm( (val1$Elev_stddev*PLSrun_C$outer_model$weight[8])+(val1$Elev_L1*PLSrun_C$outer_model$weight[9])+(val1$Elev_SQRT_mean_SQ*PLSrun_C$outer_model$weight[10])+(val1$Elev_CURT_mean_CUBE*PLSrun_C$outer_model$weight[11]) )
   X_C         <- nnorm( (val1$data.NCarbono_Subterraneo_kg_m2*PLSrun_C$outer_model$weight[12])+(val1$data.Carbono_musgo_kg_m2*PLSrun_C$outer_model$weight[13])+(val1$data.Carbono_R1_kg_m2*PLSrun_C$outer_model$weight[14]) )
-  CData <- data.frame(Spec=Spec_C, Height=Height_C, Structure=Structure_C, C=val1$data.depth)
+  CData       <- data.frame(Spec=Spec_C, Height=Height_C, Structure=Structure_C, C=val1$data.depth)
 
   ############################
   #### train RF ####
   ############################
 
-  RFrun_FC <- randomForest(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], mtry=fitRF_FC$bestTune$mtry, mtree=500, verbose=F)
-  RFrun_BM <- randomForest(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], mtry=fitRF_BM$bestTune$mtry, mtree=500, verbose=F)
-  RFrun_Rich <- randomForest(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], mtry=fitRF_Rich$bestTune$mtry, mtree=500, verbose=F)
+  RFrun_FC    <- randomForest(FC ~., data=train2[, c(2, 8:ncol(RSdata2))], mtry=fitRF_FC$bestTune$mtry, mtree=500, verbose=F)
+  RFrun_BM    <- randomForest(BM ~., data=train2[, c(3, 8:ncol(RSdata2))], mtry=fitRF_BM$bestTune$mtry, mtree=500, verbose=F)
+  RFrun_Rich  <- randomForest(Rich ~., data=train2[, c(4, 8:ncol(RSdata2))], mtry=fitRF_Rich$bestTune$mtry, mtree=500, verbose=F)
   RFrun_Depth <- randomForest(Depth ~., data=train2[, c(5, 8:ncol(RSdata2))], mtry=fitRF_depth$bestTune$mtry, mtree=500, verbose=F)
-  RFrun_C <- randomForest(C ~., data=train2[, c(6, 8:ncol(RSdata2))], mtry=fitRF_C$bestTune$mtry, mtree=500, verbose=F)
+  RFrun_C     <- randomForest(C ~., data=train2[, c(6, 8:ncol(RSdata2))], mtry=fitRF_C$bestTune$mtry, mtree=500, verbose=F)
 
   ### Prediction to validation data
   # PLSPM
@@ -656,11 +665,11 @@ for(i in 1:500){
   predPLSPM_C     <- PLSrun_C$inner_model$X[1] + Spec_C*PLSrun_C$inner_model$X[2] + Height_C*PLSrun_C$inner_model$X[3] + Structure_C*PLSrun_C$inner_model$X[4]
 
   # RF
-  predRF_FC <- predict(RFrun_FC, val2[, 8:ncol(RSdata2)], type="response" )
-  predRF_BM <- predict(RFrun_BM, val2[, 8:ncol(RSdata2)], type="response" )
-  predRF_Rich <- predict(RFrun_Rich, val2[, 8:ncol(RSdata2)], type="response" )
+  predRF_FC    <- predict(RFrun_FC, val2[, 8:ncol(RSdata2)], type="response" )
+  predRF_BM    <- predict(RFrun_BM, val2[, 8:ncol(RSdata2)], type="response" )
+  predRF_Rich  <- predict(RFrun_Rich, val2[, 8:ncol(RSdata2)], type="response" )
   predRF_Depth <- predict(RFrun_Depth, val2[, 8:ncol(RSdata2)], type="response" )
-  predRF_C <- predict(RFrun_C, val2[, 8:ncol(RSdata2)], type="response" )
+  predRF_C     <- predict(RFrun_C, val2[, 8:ncol(RSdata2)], type="response" )
 
   # store the model accuracies
   site[[i]] <- data$Uso[idx]
