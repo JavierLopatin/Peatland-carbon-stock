@@ -2,13 +2,13 @@
 ################################################################################
 ## R-Script - 0_Floristic_composition.R                                       ##
 ## author: Javier Lopatin                                                     ##
-## mail: javierlopatin@gmail.com                                              ##  
+## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
-## Manuscript: Combining ecological knowledge and remote sensing through      ##
-## structural equation modeling: A case study for peatland carbon assessments ##
+## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
+## peatland belowground carbon stock                                          ##
 ##                                                                            ##
-## description: This R-code provide the floristic coposition ordination axis  ##
-## most of the functions applied in the paper used in Supplementary matherials## 
+## description: This R-code provide the floristic composition ordination axis ##
+## used in the analysis. See Supplementary matherials of the paper            ##
 ##                                                                            ##
 ################################################################################
 
@@ -20,11 +20,11 @@ library (MASS)
 setwd("C:/your/folder/")
 
 # load floristic cover data
-sp <- read.table("data/Cover_spp.csv", header=T, sep=",", dec=".") 
+sp <- read.table("data/Cover_spp.csv", header=T, sep=",", dec=".")
 sp2 <- sp[,2:(ncol(sp)-2)]
 summary(sp2)
 # pft cover data
-pft <- read.table("data/PFT1.csv", header=T, sep=",", dec=".") 
+pft <- read.table("data/PFT1.csv", header=T, sep=",", dec=".")
 pft2 <- pft[, 2:length(pft) ]
 summary(pft2)
 
@@ -49,17 +49,18 @@ ordiplot(nmds1, choices=c(1,4))
 ordiplot(nmds1, choices=c(2,3))
 ordiplot(nmds1, choices=c(2,4))
 ordiplot(nmds1, choices=c(3,4))
+
 # save scores
-scor <- scores(nmds1)
+scor     <- scores(nmds1)
 NMDS.sp1 <- scor[, 1]
 NMDS.sp2 <- scor[, 2]
-NMDS.sp3  <- scor[, 3]
-NMDS.sp4  <- scor[, 4]
+NMDS.sp3 <- scor[, 3]
+NMDS.sp4 <- scor[, 4]
 
 ordination <- data.frame(sp$Plot, NMDS.sp1, NMDS.sp2, NMDS.sp3, NMDS.sp4)
 write.table(ordination, file = "data/ordination.csv", sep = ",", col.names = T, row.names = F)
 
-# To PFT level
+# To PFT level (This data was not used in the final version of the paper.)
 # Selecting the number of k (stress value)
 nmds.stress <- sapply(1:6, function(x) metaMDS(pft2, k=x)$stress)
 plot(1:6, nmds.stress)
