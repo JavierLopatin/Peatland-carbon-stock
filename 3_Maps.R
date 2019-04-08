@@ -1,6 +1,6 @@
 
 ################################################################################
-## R-Script: 2_Maps.R                                                         ##
+## R-Script: 3_Maps.R                                                         ##
 ## author: Javier Lopatin                                                     ##
 ## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
