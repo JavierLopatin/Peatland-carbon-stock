@@ -5,21 +5,22 @@
 ## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
 ## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
-## peatland belowground carbon stock                                          ##
+## peatland belowground carbon stocks                                         ##
 ##                                                                            ##
 ## description: This R-code provide the floristic composition ordination axis ##
-## used in the analysis. See Supplementary matherials of the paper            ##
+## used in the analysis. See Supplementary materials of the paper             ##
 ##                                                                            ##
 ################################################################################
 
-
+# load require libraries
 library (vegan)
 library (MASS)
 
 ##### set working directory
 setwd("C:/your/folder/")
 
-# load floristic cover data
+# load floristic cover data with species at each column.
+# Here, values correspond to species cover
 sp <- read.table("data/Cover_spp.csv", header=T, sep=",", dec=".")
 sp2 <- sp[,2:(ncol(sp)-2)]
 summary(sp2)
@@ -35,7 +36,7 @@ summary(pft2)
 
 ##### Apply NMDS  #####
 
-# To spp level
+### To the spp level
 # Selecting the number of k (stress value)
 nmds.stress <- sapply(1:6, function(x) metaMDS(sp[, 2:(length(sp)-2)], k=x)$stress)
 plot(1:6, nmds.stress)

@@ -5,7 +5,7 @@
 ## mail: javierlopatin@gmail.com                                              ##
 ##                                                                            ##
 ## Manuscript: Using aboveground vegetation attributes as proxies for mapping ##
-## peatland belowground carbon stock                                          ##
+## peatland belowground carbon stocks                                         ##
 ##                                                                            ##
 ## description: One-sided bootstrapping significance analysis                 ##
 ##                                                                            ##
@@ -15,8 +15,12 @@ setwd("C:/Users/Lopatin/Dropbox/PhD/Peatland/New try")
 
 load("peatland.RData")
 
-##########################
+# =======================================================
+# One-sided significant test
+# =======================================================
+
 # function to estimate significant differences between bootstrap pairs
+# Here, model1 should be the model with higher accuracies
 significanceTest <- function(model1, model2){
   ### r²
   r2 <- model1[[1]] - model2[[1]]
@@ -53,9 +57,9 @@ significanceTest <- function(model1, model2){
   a
 }
 
-#############################
-### Plot-based predictors ###
-#############################
+# =======================================================
+# Plot-based analysis
+# =======================================================
 
 plspm_plot <- list( unlist(PLSPM.r2), unlist(PLSPM.Nrmse), unlist(PLSPM.bias))
 
@@ -64,9 +68,9 @@ rf_plot <- list( unlist(RF.r2), unlist(RF.Nrmse), unlist(RF.bias))
 # sig. test
 significanceTest(plspm_plot, rf_plot)
 
-############################
-### UAV-based predictors ###
-############################
+# =======================================================
+# UAV-based analysis
+# =======================================================
 
 # Floristic composition
 plspm_uav_fc <- list( unlist(PLSPM.r2_FC), unlist(PLSPM.Nrmse_FC), unlist(PLSPM.bias_FC))
@@ -94,8 +98,8 @@ rf_uav_C <- list( unlist(RF.r2_C), unlist(RF.Nrmse_C), unlist(RF.bias_C))
 significanceTest(rf_uav_C, plspm_uav_C)
 
 
-#####################################
-### hybrid models vs UAV-based RF ###
-#####################################
+# =======================================================
+# Hybrid model analysis
+# =======================================================
 
 significanceTest(plspm_plot, rf_uav_C)
